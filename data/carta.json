@@ -1,0 +1,116 @@
+{
+  "_ayuda": "CARTA DE EJEMPLO. Cambiá nombres, precios y textos acá. Los precios van sin $ ni puntos (ej: 3200). Las etiquetas son texto libre (ej: Vegano, Sin TACC). El campo 'escena' elige el dibujo 3D de cada capítulo: espresso, especial, frio, pasteleria, salado, combo, bebidas. Si un producto no se vende más, borrá su bloque entero { ... } y la coma que lo separa.",
+
+  "negocio": {
+    "nombre": "12oz",
+    "nombreLargo": "12 Onzas Café",
+    "ciudad": "General Pico, La Pampa",
+    "direccion": "General Pico, La Pampa",
+    "_direccion": "Completar con calle y número reales.",
+    "instagram": "12onzas.cafepico",
+    "maps": "https://maps.app.goo.gl/nJftJWZxSQeZq3hN7",
+    "whatsapp": "",
+    "_whatsapp": "Número con código de país, sin + ni espacios. Ej: 5492302000000. Mientras esté vacío, el botón de WhatsApp no aparece.",
+    "horarioDeEjemplo": true,
+    "horarios": [
+      { "dias": "Lunes a sábado", "desde": "08:00", "hasta": "20:00", "numeros": [1, 2, 3, 4, 5, 6] },
+      { "dias": "Domingo", "desde": "09:00", "hasta": "13:00", "numeros": [0] }
+    ],
+    "_horarios": "numeros: 0 = domingo, 1 = lunes ... 6 = sábado. Se usan para mostrar 'Abierto ahora'."
+  },
+
+  "categorias": [
+    {
+      "id": "cafe",
+      "titulo": "Café",
+      "bajada": "Espresso de tueste medio, molido en el momento para cada taza.",
+      "escena": "espresso",
+      "productos": [
+        { "nombre": "Espresso", "precio": 3200, "desc": "Corto, denso, con crema color avellana. La base de todo lo que hacemos.", "etiquetas": ["Vegano", "Sin TACC"] },
+        { "nombre": "Ristretto", "precio": 3200, "desc": "La primera mitad del espresso: más dulce, más intenso, en dos sorbos.", "etiquetas": ["Vegano", "Sin TACC"] },
+        { "nombre": "Cortado", "precio": 3600, "desc": "Espresso con un toque de leche texturizada. Equilibrio puro.", "etiquetas": ["Sin TACC", "Leche vegetal"] },
+        { "nombre": "Lágrima", "precio": 3800, "desc": "Leche caliente y cremosa con apenas una lágrima de café.", "etiquetas": ["Sin TACC", "Leche vegetal"] },
+        { "nombre": "Flat white", "precio": 4800, "desc": "Doble ristretto y leche sedosa en capa fina. Para los que saben.", "etiquetas": ["Sin TACC", "Leche vegetal"] },
+        { "nombre": "Latte", "precio": 4900, "desc": "Espresso, mucha leche y latte art. La taza de 12 onzas por excelencia.", "etiquetas": ["Sin TACC", "Leche vegetal"] },
+        { "nombre": "Cappuccino", "precio": 5000, "desc": "Partes iguales de espresso, leche y espuma, con cacao por encima.", "etiquetas": ["Sin TACC", "Leche vegetal"] },
+        { "nombre": "Americano", "precio": 3900, "desc": "Espresso alargado con agua caliente. Suave, largo y sin apuro.", "etiquetas": ["Vegano", "Sin TACC"] }
+      ]
+    },
+    {
+      "id": "especiales",
+      "titulo": "Especiales",
+      "bajada": "Recetas de la casa para cuando el café es el plan.",
+      "escena": "especial",
+      "productos": [
+        { "nombre": "Latte de pistacho", "precio": 6500, "desc": "Crema de pistacho tostado, espresso y leche. Verde suave, sabor profundo.", "etiquetas": ["Sin TACC", "Nuevo"] },
+        { "nombre": "Mocha blanco", "precio": 5900, "desc": "Chocolate blanco fundido, espresso doble y espuma cremosa.", "etiquetas": ["Sin TACC"] },
+        { "nombre": "Caramel macchiato", "precio": 5900, "desc": "Leche con vainilla, espresso marcado arriba y hilos de caramelo.", "etiquetas": ["Sin TACC"] },
+        { "nombre": "Chai latte", "precio": 5400, "desc": "Té negro especiado con canela, cardamomo y jengibre, con leche espumada.", "etiquetas": ["Sin TACC", "Leche vegetal"] },
+        { "nombre": "Matcha latte", "precio": 6200, "desc": "Matcha ceremonial batido a mano y leche cremosa. Energía tranquila.", "etiquetas": ["Sin TACC", "Leche vegetal"] },
+        { "nombre": "Café 12oz de la casa", "precio": 6300, "desc": "Espresso doble, leche texturizada, dulce de leche y canela. Nuestra firma.", "etiquetas": ["De la casa", "Sin TACC"] }
+      ]
+    },
+    {
+      "id": "frios",
+      "titulo": "Fríos",
+      "bajada": "Hielo, cold brew de dieciocho horas y algo de sol.",
+      "escena": "frio",
+      "productos": [
+        { "nombre": "Iced latte", "precio": 5800, "desc": "Espresso sobre hielo y leche fría. Se mira antes de tomarlo.", "etiquetas": ["Sin TACC", "Leche vegetal"] },
+        { "nombre": "Cold brew", "precio": 5500, "desc": "Café infusionado en frío durante 18 horas. Suave, dulce, sin amargor.", "etiquetas": ["Vegano", "Sin TACC"] },
+        { "nombre": "Espresso tonic", "precio": 5900, "desc": "Agua tónica, hielo, piel de naranja y un espresso que cae en cascada.", "etiquetas": ["Vegano", "Sin TACC"] },
+        { "nombre": "Frappé de dulce de leche", "precio": 6900, "desc": "Café, hielo y dulce de leche licuados, con crema batida.", "etiquetas": ["Sin TACC"] },
+        { "nombre": "Iced matcha", "precio": 6400, "desc": "Matcha batido sobre leche fría y hielo. Verde, fresco, vibrante.", "etiquetas": ["Sin TACC", "Leche vegetal"] }
+      ]
+    },
+    {
+      "id": "pasteleria",
+      "titulo": "Pastelería",
+      "bajada": "Horneada cada mañana, con manteca de verdad.",
+      "escena": "pasteleria",
+      "productos": [
+        { "nombre": "Medialuna de manteca", "precio": 1400, "desc": "Hojaldre dorado y almíbar justo. La compañera de siempre.", "etiquetas": [] },
+        { "nombre": "Croissant de almendras", "precio": 4200, "desc": "Relleno de crema de almendras y cubierto de láminas tostadas.", "etiquetas": ["De la casa"] },
+        { "nombre": "Cookie de chocolate", "precio": 3200, "desc": "Borde crocante, centro blando y trozos grandes de chocolate amargo.", "etiquetas": [] },
+        { "nombre": "Cheesecake de frutos rojos", "precio": 5900, "desc": "Cremoso al estilo New York, con coulis de frutos rojos.", "etiquetas": [] },
+        { "nombre": "Budín de limón y amapola", "precio": 3400, "desc": "Húmedo, cítrico, con glaseado de limón.", "etiquetas": [] },
+        { "nombre": "Alfajor de maicena", "precio": 2200, "desc": "Tapas que se deshacen, dulce de leche y coco rallado.", "etiquetas": ["Sin TACC"] }
+      ]
+    },
+    {
+      "id": "salado",
+      "titulo": "Salado",
+      "bajada": "Pan de masa madre y rellenos generosos.",
+      "escena": "salado",
+      "productos": [
+        { "nombre": "Tostado de jamón y queso", "precio": 6800, "desc": "Pan de miga a la plancha, jamón cocido y queso que se estira.", "etiquetas": [] },
+        { "nombre": "Avocado toast con huevo", "precio": 8900, "desc": "Masa madre, palta pisada, huevo poché, semillas y oliva.", "etiquetas": ["Vegetariano"] },
+        { "nombre": "Sándwich de bondiola braseada", "precio": 10500, "desc": "Bondiola cocida lento, cebolla caramelizada y alioli en pan de campo.", "etiquetas": ["De la casa"] },
+        { "nombre": "Bagel de salmón y queso crema", "precio": 11200, "desc": "Bagel tostado, salmón ahumado, queso crema, alcaparras y eneldo.", "etiquetas": [] }
+      ]
+    },
+    {
+      "id": "combos",
+      "titulo": "Combos",
+      "bajada": "Desayunos y meriendas resueltos en una sola elección.",
+      "escena": "combo",
+      "productos": [
+        { "nombre": "Desayuno 12oz", "precio": 8900, "desc": "Café a elección, dos medialunas de manteca y jugo de naranja.", "etiquetas": ["De la casa"] },
+        { "nombre": "Brunch", "precio": 13500, "desc": "Avocado toast con huevo, café a elección y jugo de naranja.", "etiquetas": ["Vegetariano"] },
+        { "nombre": "Merienda dulce", "precio": 9800, "desc": "Café a elección y una porción de la torta del día.", "etiquetas": [] }
+      ]
+    },
+    {
+      "id": "bebidas",
+      "titulo": "Bebidas",
+      "bajada": "Exprimidos, limonada y té en hebras.",
+      "escena": "bebidas",
+      "productos": [
+        { "nombre": "Jugo de naranja exprimido", "precio": 4200, "desc": "Naranjas exprimidas en el momento. Nada más.", "etiquetas": ["Vegano", "Sin TACC"] },
+        { "nombre": "Limonada con menta y jengibre", "precio": 4500, "desc": "Limón, menta fresca y jengibre, con mucho hielo.", "etiquetas": ["Vegano", "Sin TACC"] },
+        { "nombre": "Agua con o sin gas", "precio": 2000, "desc": "Botella de 500 ml.", "etiquetas": ["Vegano", "Sin TACC"] },
+        { "nombre": "Té en hebras", "precio": 3500, "desc": "Negro, verde o de frutos rojos, servido en tetera.", "etiquetas": ["Vegano", "Sin TACC"] }
+      ]
+    }
+  ]
+}

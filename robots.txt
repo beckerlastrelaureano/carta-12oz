@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://beckerlastrelaureano.github.io/carta-12oz/sitemap.xml
