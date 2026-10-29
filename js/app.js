@@ -19,6 +19,10 @@
   // Lo que la escena 3D lee en cada cuadro
   const estado = window.CARTA_ESTADO = { t: 0, fin: 0, cap: -1, pulso: 0 };
 
+  // Portada sin animación de scroll (ver estadoScroll y .portada-simple en el CSS)
+  const portadaSimple = perf.reducir || !(window.gsap && window.ScrollTrigger);
+  if (portadaSimple) html.classList.add('portada-simple');
+
   if (!location.hash) scrollTo(0, 0);
 
   /* ---------- Pantalla de carga ---------- */
@@ -73,7 +77,7 @@
     estadoScroll();
 
     if (perf.nivel !== 'bajo') {
-      import('./escena.js?v=1')
+      import('./escena.js?v=2')
         .then(() => avance(.7))
         .catch(err => { console.warn('El 3D no se pudo cargar; queda la carta sin escena.', err); html.dataset.nivel = 'bajo'; sacarCarga(); });
       addEventListener('escena:lista', sacarCarga, { once: true });
@@ -192,6 +196,12 @@
     m.caps.forEach((c, i) => { if (c <= ref) act = i; });
     if (m.info <= ref) act = m.caps.length;
     estado.cap = act;
+    // Sin animaciones (reducir movimiento o sin GSAP): la portada cambia de golpe,
+    // primero logo y lugar, después el titular. Así nunca se pisan los textos.
+    if (portadaSimple) {
+      const p = limitar((y - m.portadaTop) / Math.max(1, m.portadaH - vh));
+      html.classList.toggle('portada-2', p >= .5);
+    }
     html.classList.toggle('en-portada', y < vh * .6);
     html.classList.toggle('en-cierre', y + 60 > m.info);
     if (act !== pillActiva) marcarPill(act);
@@ -343,7 +353,8 @@
   function revelarPortada() {
     if (!hayGsap) return;
     gsap.fromTo('.portada-logo', { opacity: 0, scale: .94 }, { opacity: 1, scale: 1, duration: 1.4, ease: 'expo.out' });
-    gsap.fromTo(['.portada-lugar', '.deslizar'], { opacity: 0 }, { opacity: 1, duration: 1, delay: .5, stagger: .15 });
+    // El lugar y "Deslizá" aparecen con CSS (.portada-intro): si se animaran acá,
+    // pisarían la animación del scroll cuando alguien desliza apenas carga.
   }
 
   /* ---------- 4. Ficha del producto ---------- */

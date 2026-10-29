@@ -11,7 +11,7 @@
   --crema: #e3d3bb;       /* espuma de leche */
   --caramelo: #c98b4e;    /* acento: dulce de leche */
   --texto2: rgba(243, 236, 224, .64);
-  --texto3: rgba(243, 236, 224, .42);
+  --texto3: rgba(243, 236, 224, .56);   /* mínimo para contraste AA sobre el fondo */
   --linea: rgba(243, 236, 224, .13);
 
   --serif: 'Cormorant Garamond', 'Times New Roman', serif;
@@ -134,6 +134,18 @@ ul { padding: 0; list-style: none; }
   pointer-events: none;
 }
 .barra > * { pointer-events: auto; }
+/* Degradado detrás de la barra: el texto que sube no se mezcla con el logo */
+.barra::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -26px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(20, 17, 14, .95), rgba(20, 17, 14, .82) 62%, transparent);
+  transition: opacity .5s ease;
+}
+.en-portada .barra::before { opacity: 0; }
+.en-cierre .barra::before { background: linear-gradient(to bottom, rgba(243, 236, 224, .98), rgba(243, 236, 224, .9) 62%, transparent); }
 .barra-logo {
   flex: none;
   width: 34px;
@@ -149,7 +161,7 @@ ul { padding: 0; list-style: none; }
   gap: 2px;
   min-width: 0;
   margin-left: auto;
-  padding: 4px;
+  padding: 0;
   overflow-x: auto;
   scrollbar-width: none;
   border: 1px solid var(--linea);
@@ -165,8 +177,13 @@ ul { padding: 0; list-style: none; }
 }
 .pills::-webkit-scrollbar { display: none; }
 .pill {
+  position: relative;
+  z-index: 0;
   flex: none;
-  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
   border-radius: 999px;
   font-size: 13.5px;
   font-weight: 400;
@@ -174,12 +191,26 @@ ul { padding: 0; list-style: none; }
   text-decoration: none;
   color: var(--texto2);
   white-space: nowrap;
-  transition: background-color .4s var(--curva), color .4s var(--curva);
+  transition: color .4s var(--curva);
 }
 .pill:first-child { margin-left: 8px; }
 .pill:last-child { margin-right: 8px; }
 .pill:hover { color: var(--hueso); }
-.pill[aria-current="true"] { background: var(--hueso); color: var(--carbon); }
+/* La píldora clara se dibuja con ::before (4 px de aire arriba y abajo) */
+.pill::before {
+  content: "";
+  position: absolute;
+  inset: 4px 0;
+  z-index: -1;
+  border-radius: 999px;
+  background: transparent;
+  transition: background-color .4s var(--curva);
+}
+.pill:focus-visible { outline-offset: -2px; }
+.pill[aria-current="true"] { color: var(--carbon); }
+.pill[aria-current="true"]::before { background: var(--hueso); }
+/* Sobre el cierre claro la barra se vuelve sólida para que se lea */
+.en-cierre .pills { background: rgba(20, 17, 14, .9); border-color: transparent; }
 
 /* ---------- Portada ---------- */
 main { position: relative; z-index: 3; }
@@ -188,6 +219,7 @@ main { position: relative; z-index: 3; }
   position: sticky;
   top: 0;
   height: 100svh;
+  overflow: hidden;   /* el marco del logo crece 9 veces: que no ensanche la página */
   padding: 0 var(--margen) calc(13svh + var(--seguro-abajo));
   display: flex;
   flex-direction: column;
@@ -205,6 +237,9 @@ main { position: relative; z-index: 3; }
   color: var(--hueso);
   overflow: visible;
 }
+/* Aparece al terminar la carga; el scroll anima a los hijos (sin pisarse) */
+.portada-intro { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.1s ease .5s; }
+.cargado .portada-intro { opacity: 1; }
 .portada-lugar {
   position: absolute;
   left: 0;
@@ -247,6 +282,14 @@ main { position: relative; z-index: 3; }
 @keyframes gota { 0% { transform: scaleY(0); opacity: 1; } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
 .reducir .deslizar i { animation: none; }
 .portada-logo path { vector-effect: non-scaling-stroke; stroke-width: 2.2px; }
+
+/* Portada sin animaciones (reducir movimiento / sin GSAP): dos estados fijos */
+.portada-simple .portada { height: 200svh; }
+.portada-simple .titular, .portada-simple .portada-sub,
+.portada-simple .portada-logo, .portada-simple .portada-lugar, .portada-simple .deslizar { transition: opacity .6s ease, visibility .6s; }
+.portada-simple .titular, .portada-simple .portada-sub { opacity: 0; visibility: hidden; }
+.portada-simple.portada-2 .titular, .portada-simple.portada-2 .portada-sub { opacity: 1; visibility: visible; }
+.portada-simple.portada-2 .portada-logo, .portada-simple.portada-2 .portada-lugar, .portada-simple.portada-2 .deslizar { opacity: 0; visibility: hidden; }
 
 /* Palabras que suben desde una máscara (ver app.js) */
 .palabra-m { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 .05em .2em; margin: 0 -.05em -.2em; }
@@ -297,7 +340,7 @@ main { position: relative; z-index: 3; }
   display: none;
   position: absolute;
   top: 12svh;
-  right: -4vw;
+  right: 0;
   font-family: var(--serif);
   font-weight: 300;
   font-size: 70vw;
@@ -306,6 +349,8 @@ main { position: relative; z-index: 3; }
   pointer-events: none;
 }
 [data-nivel="bajo"] .cap-fondo { display: block; }
+/* El número gigante no puede ensanchar la página en el celular */
+[data-nivel="bajo"] .cap-intro { overflow: hidden; }
 
 .cap-lista {
   position: relative;
@@ -316,7 +361,7 @@ main { position: relative; z-index: 3; }
   background: rgba(24, 19, 15, .9);
 }
 [data-nivel="alto"] .cap-lista {
-  background: rgba(24, 19, 15, .62);
+  background: rgba(24, 19, 15, .72);
   -webkit-backdrop-filter: blur(22px) saturate(130%);
           backdrop-filter: blur(22px) saturate(130%);
 }
@@ -450,7 +495,7 @@ main { position: relative; z-index: 3; }
 }
 .horarios { display: grid; grid-template-columns: 1fr auto; row-gap: 8px; font-size: 1.05rem; }
 .horarios dd { font-variant-numeric: tabular-nums; }
-.nota { margin-top: 10px; font-family: var(--serif); font-style: italic; font-size: 1rem; color: rgba(20, 17, 14, .55); }
+.nota { margin-top: 10px; font-family: var(--serif); font-style: italic; font-size: 1rem; color: rgba(20, 17, 14, .68); }
 .direccion { font-family: var(--serif); font-size: 1.5rem; line-height: 1.25; }
 .acciones { display: flex; flex-direction: column; gap: 10px; margin-top: 44px; }
 .boton {
@@ -478,7 +523,7 @@ main { position: relative; z-index: 3; }
   padding-top: 18px;
   border-top: 1px solid rgba(20, 17, 14, .14);
   font-size: 12.5px;
-  color: rgba(20, 17, 14, .55);
+  color: rgba(20, 17, 14, .68);
 }
 
 /* ---------- Ficha del producto (bottom sheet) ---------- */
@@ -515,8 +560,8 @@ main { position: relative; z-index: 3; }
   position: absolute;
   top: 14px;
   right: 14px;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -549,10 +594,24 @@ main { position: relative; z-index: 3; }
 .ficha-precio { font-family: var(--serif); font-size: 2.3rem; font-weight: 400; color: var(--caramelo); font-variant-numeric: lining-nums; }
 .ficha-nota { font-size: 13px; color: var(--texto3); letter-spacing: .04em; }
 
+/* ---------- Celulares bajos (ej. 360 x 640): el titular no pisa la taza ---------- */
+@media (max-width: 959px) and (max-height: 720px) {
+  .portada-fija { padding-bottom: calc(9svh + var(--seguro-abajo)); }
+  .titular { font-size: clamp(2.5rem, 11.4vw, 3.4rem); max-width: 13ch; }
+  .portada-sub { margin-top: 12px; font-size: 14.5px; }
+}
+
 /* ---------- Pantallas grandes ---------- */
 @media (min-width: 960px) {
   :root { --margen: 5vw; }
   .barra { padding: 22px 3vw 0 var(--margen); }
+  /* Los títulos van a la izquierda: un poco de sombra ahí para que se lean sobre la luz del 3D */
+  .velo {
+    background:
+      linear-gradient(to right, rgba(20, 17, 14, .5), transparent 42%),
+      radial-gradient(120% 70% at 50% 40%, transparent 45%, rgba(10, 8, 6, .55) 100%),
+      linear-gradient(to bottom, rgba(20, 17, 14, .5), transparent 18%, transparent 55%, rgba(20, 17, 14, .85));
+  }
   .barra-logo { width: 40px; height: 40px; }
   .pill { padding: 9px 17px; font-size: 14px; }
 
@@ -568,6 +627,7 @@ main { position: relative; z-index: 3; }
     grid-template-columns: 1fr minmax(440px, 36vw);
     column-gap: 4vw;
     padding-right: 4vw;
+    min-height: 170vh;   /* capítulos cortos: el título queda fijo mientras se ve el plato */
   }
   .cap-intro {
     position: sticky;

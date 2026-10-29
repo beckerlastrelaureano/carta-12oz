@@ -740,13 +740,18 @@ function encuadre(t) {
     // en los capítulos el plato pasa a la izquierda con un barrido.
     const kp = suavizar(lim(t / 1)), kc = suavizar(lim((t - 1) / .85));
     ox = mezclar(mezclar(0, -ancho * .17, kp), ancho * .2, kc);
-    oy = mezclar(-altoPx * .1, altoPx * .05, k);
+    // Arranque: la taza más abajo, lejos del texto "Carta de 12 Onzas Café".
+    // Capítulos: el plato más arriba, para que no lo pise el título grande.
+    oy = mezclar(-altoPx * .16, altoPx * .14, k);
   } else {
-    oy = mezclar(-altoPx * .14, altoPx * .15, k);
+    // La taza sube antes de que aparezca el titular de la portada,
+    // así "Doce onzas de café..." queda debajo del plato y no encima.
+    const km = suavizar(lim((t - .3) / .62));
+    oy = mezclar(-altoPx * .14, altoPx * .15, km);
   }
   camera.setViewOffset(ancho, altoPx, ox, oy, ancho, altoPx);
-  // En celular vertical se aleja un poco para que entre el plato
-  return escritorio ? 1.3 : Math.min(1.75, Math.max(1, .8 / (ancho / altoPx)));
+  // En celular se aleja un poco para que entre el plato (y en pantallas bajas no lo pise el texto)
+  return escritorio ? 1.5 : Math.min(1.75, Math.max(1.6, .8 / (ancho / altoPx)));
 }
 medir();
 addEventListener('resize', medir);
