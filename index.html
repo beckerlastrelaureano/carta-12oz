@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <!-- ===== TEXTOS PARA GOOGLE Y PARA CUANDO SE COMPARTE EL LINK ===== -->
-  <title>Carta | 12oz Café, General Pico</title>
-  <meta name="description" content="Carta digital de 12oz (12 Onzas Café), General Pico, La Pampa: café de especialidad, especiales, fríos, pastelería, salado, combos y bebidas.">
+  <title>Carta | Café de especialidad</title>
+  <meta name="description" content="Carta digital de café de especialidad: espresso, especiales, fríos, pastelería, salado, combos y bebidas.">
   <meta name="theme-color" content="#14110e">
   <link rel="canonical" href="https://beckerlastrelaureano.github.io/carta-12oz/">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_AR">
-  <meta property="og:title" content="12oz Café | Carta digital">
-  <meta property="og:description" content="Café de especialidad, pastelería y cocina en General Pico. Mirá la carta.">
+  <meta property="og:title" content="Café de especialidad | Carta digital">
+  <meta property="og:description" content="Café de especialidad, pastelería y cocina. Mirá la carta.">
   <meta property="og:url" content="https://beckerlastrelaureano.github.io/carta-12oz/">
   <meta property="og:image" content="https://beckerlastrelaureano.github.io/carta-12oz/img/og.png">
   <meta property="og:image:width" content="1200">
@@ -21,57 +21,37 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 
   <!-- Decide cuánto 3D aguanta el teléfono (antes que todo) -->
-  <script src="js/rendimiento.js?v=1"></script>
+  <script src="js/rendimiento.js?v=2"></script>
 
-  <!-- Dirección de Three.js (librería 3D) en el CDN, versión fija -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
-    }
-  }
-  </script>
-  <!-- Si el teléfono va a mostrar el 3D, Three.js se empieza a bajar ya (no después de leer la carta) -->
-  <script>
-    if (window.CARTA_PERF && CARTA_PERF.nivel !== 'bajo') {
-      var pre = document.createElement('link');
-      pre.rel = 'modulepreload';
-      pre.href = 'https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js';
-      document.head.appendChild(pre);
-    }
-  </script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap">
-  <link rel="stylesheet" href="css/carta.css?v=2">
+  <link rel="stylesheet" href="css/carta.css?v=4">
   <link rel="preload" href="data/carta.json" as="fetch" crossorigin>
 
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "CafeOrCoffeeShop",
-    "name": "12 Onzas Café",
-    "alternateName": "12oz",
-    "address": { "@type": "PostalAddress", "addressLocality": "General Pico", "addressRegion": "La Pampa", "addressCountry": "AR" },
-    "sameAs": ["https://www.instagram.com/12onzas.cafepico/"],
+    "name": "Café de especialidad",
     "hasMenu": "https://beckerlastrelaureano.github.io/carta-12oz/"
   }
   </script>
 </head>
 <body>
-  <!-- Logo 12oz reutilizable (se dibuja con <use>) -->
+  <!-- Logo genérico reutilizable (se dibuja con <use>) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <symbol id="logo12" viewBox="0 0 100 100">
+    <symbol id="logo" viewBox="0 0 100 100">
       <g fill="none" stroke="currentColor" stroke-width="1.5">
-        <path pathLength="1" d="M14 38V4h82v92h-9"/>
-        <path pathLength="1" d="M8.5 58.5 14 52v44"/>
-        <path pathLength="1" d="M21 61c0-7 5-11 12.5-11S46 54.5 46 61c0 7-5 12-25 35h32"/>
-        <path pathLength="1" d="M61.5 83.3a6.2 6.2 0 1 1 0 12.4a6.2 6.2 0 1 1 0-12.4"/>
-        <path pathLength="1" d="M71 83.6h9.5L71 95.4h10"/>
-        <path pathLength="1" d="M84.2 94.5v1.5"/>
+        <path pathLength="1" d="M10 4h80a6 6 0 0 1 6 6v80a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V10a6 6 0 0 1 6-6Z"/>
+        <path pathLength="1" d="M29 47h38v10c0 12-8.5 19-19 19s-19-7-19-19Z"/>
+        <path pathLength="1" d="M67 51h3.5a6.5 6.5 0 0 1 0 13H65"/>
+        <path pathLength="1" d="M22 82h52"/>
+        <path pathLength="1" d="M40 39c-3-4.5 3-6.5 0-11"/>
+        <path pathLength="1" d="M48 39c-3-4.5 3-6.5 0-11"/>
+        <path pathLength="1" d="M56 39c-3-4.5 3-6.5 0-11"/>
       </g>
     </symbol>
   </svg>
@@ -80,12 +60,13 @@
   <div class="carga" id="carga" aria-hidden="true">
     <svg class="logo-trazo" viewBox="0 0 100 100">
       <g fill="none" stroke="currentColor" stroke-width="1.2">
-        <path pathLength="1" d="M14 38V4h82v92h-9"/>
-        <path pathLength="1" d="M8.5 58.5 14 52v44"/>
-        <path pathLength="1" d="M21 61c0-7 5-11 12.5-11S46 54.5 46 61c0 7-5 12-25 35h32"/>
-        <path pathLength="1" d="M61.5 83.3a6.2 6.2 0 1 1 0 12.4a6.2 6.2 0 1 1 0-12.4"/>
-        <path pathLength="1" d="M71 83.6h9.5L71 95.4h10"/>
-        <path pathLength="1" d="M84.2 94.5v1.5"/>
+        <path pathLength="1" d="M10 4h80a6 6 0 0 1 6 6v80a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V10a6 6 0 0 1 6-6Z"/>
+        <path pathLength="1" d="M29 47h38v10c0 12-8.5 19-19 19s-19-7-19-19Z"/>
+        <path pathLength="1" d="M67 51h3.5a6.5 6.5 0 0 1 0 13H65"/>
+        <path pathLength="1" d="M22 82h52"/>
+        <path pathLength="1" d="M40 39c-3-4.5 3-6.5 0-11"/>
+        <path pathLength="1" d="M48 39c-3-4.5 3-6.5 0-11"/>
+        <path pathLength="1" d="M56 39c-3-4.5 3-6.5 0-11"/>
       </g>
     </svg>
     <div class="carga-barra"><i></i></div>
@@ -98,8 +79,8 @@
 
   <!-- ===== BARRA DE CATEGORÍAS (se arma sola con data/carta.json) ===== -->
   <header class="barra" id="barra">
-    <a class="barra-logo" href="#inicio" aria-label="12oz, volver al inicio">
-      <svg viewBox="0 0 100 100"><use href="#logo12"/></svg>
+    <a class="barra-logo" href="#inicio" aria-label="Volver al inicio">
+      <svg viewBox="0 0 100 100"><use href="#logo"/></svg>
     </a>
     <nav class="pills" id="pills" aria-label="Categorías de la carta"></nav>
   </header>
@@ -108,25 +89,26 @@
     <!-- ===== PORTADA ===== -->
     <section class="portada" id="inicio" aria-label="Portada">
       <div class="portada-fija">
-        <svg class="portada-logo logo-trazo" viewBox="0 0 100 100" role="img" aria-label="12oz">
+        <svg class="portada-logo logo-trazo" viewBox="0 0 100 100" role="img" aria-label="Café de especialidad">
           <g fill="none" stroke="currentColor" stroke-width="1">
-            <path pathLength="1" d="M14 38V4h82v92h-9"/>
-            <path pathLength="1" d="M8.5 58.5 14 52v44"/>
-            <path pathLength="1" d="M21 61c0-7 5-11 12.5-11S46 54.5 46 61c0 7-5 12-25 35h32"/>
-            <path pathLength="1" d="M61.5 83.3a6.2 6.2 0 1 1 0 12.4a6.2 6.2 0 1 1 0-12.4"/>
-            <path pathLength="1" d="M71 83.6h9.5L71 95.4h10"/>
-            <path pathLength="1" d="M84.2 94.5v1.5"/>
+            <path pathLength="1" d="M10 4h80a6 6 0 0 1 6 6v80a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V10a6 6 0 0 1 6-6Z"/>
+            <path pathLength="1" d="M29 47h38v10c0 12-8.5 19-19 19s-19-7-19-19Z"/>
+            <path pathLength="1" d="M67 51h3.5a6.5 6.5 0 0 1 0 13H65"/>
+            <path pathLength="1" d="M22 82h52"/>
+            <path pathLength="1" d="M40 39c-3-4.5 3-6.5 0-11"/>
+            <path pathLength="1" d="M48 39c-3-4.5 3-6.5 0-11"/>
+            <path pathLength="1" d="M56 39c-3-4.5 3-6.5 0-11"/>
           </g>
         </svg>
         <!-- Texto de la portada -->
         <!-- Lugar y "Deslizá" aparecen juntos al terminar la carga (ver .portada-intro en el CSS) -->
         <div class="portada-intro">
-          <p class="portada-lugar">Carta de 12 Onzas Café<br>General Pico, La Pampa</p>
+          <p class="portada-lugar">Carta digital<br>Café de especialidad</p>
           <div class="deslizar" aria-hidden="true"><span>Deslizá</span><i></i></div>
         </div>
 
         <div class="portada-frase">
-          <h1 class="titular" data-lineas>Doce onzas de café, servidas sin apuro.</h1>
+          <h1 class="titular" data-lineas>Buen café, servido sin apuro.</h1>
           <p class="portada-sub">Café de especialidad, pastelería del día y cocina para quedarse. Deslizá y elegí.</p>
         </div>
 
@@ -141,12 +123,13 @@
       <div class="cierre-in">
         <svg class="cierre-logo logo-trazo" viewBox="0 0 100 100" aria-hidden="true">
           <g fill="none" stroke="currentColor" stroke-width="1">
-            <path pathLength="1" d="M14 38V4h82v92h-9"/>
-            <path pathLength="1" d="M8.5 58.5 14 52v44"/>
-            <path pathLength="1" d="M21 61c0-7 5-11 12.5-11S46 54.5 46 61c0 7-5 12-25 35h32"/>
-            <path pathLength="1" d="M61.5 83.3a6.2 6.2 0 1 1 0 12.4a6.2 6.2 0 1 1 0-12.4"/>
-            <path pathLength="1" d="M71 83.6h9.5L71 95.4h10"/>
-            <path pathLength="1" d="M84.2 94.5v1.5"/>
+            <path pathLength="1" d="M10 4h80a6 6 0 0 1 6 6v80a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V10a6 6 0 0 1 6-6Z"/>
+            <path pathLength="1" d="M29 47h38v10c0 12-8.5 19-19 19s-19-7-19-19Z"/>
+            <path pathLength="1" d="M67 51h3.5a6.5 6.5 0 0 1 0 13H65"/>
+            <path pathLength="1" d="M22 82h52"/>
+            <path pathLength="1" d="M40 39c-3-4.5 3-6.5 0-11"/>
+            <path pathLength="1" d="M48 39c-3-4.5 3-6.5 0-11"/>
+            <path pathLength="1" d="M56 39c-3-4.5 3-6.5 0-11"/>
           </g>
         </svg>
 
@@ -162,18 +145,18 @@
             </div>
             <div class="bloque">
               <h3>Dónde estamos</h3>
-              <p class="direccion" id="direccion">General Pico, La Pampa</p>
+              <p class="direccion" id="direccion">Dirección a confirmar</p>
             </div>
           </div>
 
           <div class="acciones">
-            <a class="boton boton-lleno" id="btn-maps" href="https://maps.app.goo.gl/nJftJWZxSQeZq3hN7" target="_blank" rel="noopener">
+            <a class="boton boton-lleno" id="btn-maps" href="#" hidden target="_blank" rel="noopener">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21Z"/><circle cx="12" cy="10" r="2.3"/></svg>
               Cómo llegar
             </a>
-            <a class="boton" id="btn-ig" href="https://www.instagram.com/12onzas.cafepico/" target="_blank" rel="noopener">
+            <a class="boton" id="btn-ig" href="#" hidden target="_blank" rel="noopener">
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".6"/></svg>
-              <span id="ig-usuario">@12onzas.cafepico</span>
+              <span id="ig-usuario">Instagram</span>
             </a>
             <a class="boton" id="btn-wa" href="#" target="_blank" rel="noopener" hidden>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5 5.6 16A8 8 0 1 1 8.4 18.6Z"/><path d="M9.2 8.6c.3 2.8 2.6 5.5 5.6 6.1l1.2-1.3-1.6-.9-.8.7c-1-.4-2.2-1.6-2.6-2.6l.7-.8-.9-1.6Z"/></svg>
@@ -209,6 +192,6 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
-  <script src="js/app.js?v=2"></script>
+  <script src="js/app.js?v=4"></script>
 </body>
 </html>

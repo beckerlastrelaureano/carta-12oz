@@ -1,7 +1,9 @@
-# Carta digital 12oz (12 Onzas Café, General Pico)
+# Carta digital de cafetería (genérica)
 
-Carta web que se abre desde el QR o el chip NFC de la mesa. Escena 3D en tiempo real
-(Three.js) que la cámara recorre con el scroll, un plato por capítulo.
+Carta web que se abre desde el QR o el chip NFC de la mesa. De fondo, la foto del plato de cada
+capítulo, con profundidad: la cámara viaja con el scroll, el plato nuevo aparece de adelante hacia
+atrás, sale vapor de las bebidas calientes y la foto se mueve con el mouse, el dedo o la inclinación
+del teléfono como si fuera 3D.
 
 > **Importante: la carta, los precios, las descripciones y el horario son DE EJEMPLO.**
 > Hay que reemplazarlos por los reales antes de publicar (ver "Cómo editar").
@@ -59,3 +61,15 @@ que cambiaste (por ejemplo `css/carta.css?v=1` pasa a `?v=2`). `data/carta.json`
 - Dirección exacta y número de WhatsApp.
 - Confirmar la dirección web final: hoy los meta tags, `robots.txt` y `sitemap.xml`
   apuntan a `https://beckerlastrelaureano.github.io/carta-12oz/`.
+
+## Fotos
+
+Las fotos están en `img/platos/`. Cada una tiene tres archivos: `nombre.jpg` (grande),
+`nombre-chica.jpg` (celular) y `nombre-prof.jpg` (mapa de profundidad: blanco = cerca, negro = lejos).
+Qué foto usa cada capítulo se elige en `data/carta.json` con `"foto"` y `"pie"`.
+
+**Las fotos actuales son de ejemplo, generadas con IA** (ElevenLabs Seedream 5 Pro y Canva). Para un
+cliente real conviene reemplazarlas por fotos de sus platos. El mapa de profundidad se calcula con
+Depth Anything V2 (script en la carpeta de trabajo de Claude, se puede volver a correr).
+
+Falta una foto propia para **Bebidas**: por ahora usa la del desayuno.

@@ -77,7 +77,7 @@
     estadoScroll();
 
     if (perf.nivel !== 'bajo') {
-      import('./escena.js?v=2')
+      import('./escena.js?v=4')
         .then(() => avance(.7))
         .catch(err => { console.warn('El 3D no se pudo cargar; queda la carta sin escena.', err); html.dataset.nivel = 'bajo'; sacarCarga(); });
       addEventListener('escena:lista', sacarCarga, { once: true });
@@ -133,15 +133,16 @@
 
   function dibujarCierre(neg) {
     if (neg.direccion) $('#direccion').textContent = neg.direccion;
-    if (neg.maps) $('#btn-maps').href = neg.maps;
+    if (neg.maps) { $('#btn-maps').href = neg.maps; $('#btn-maps').hidden = false; }
     if (neg.instagram) {
       $('#btn-ig').href = 'https://www.instagram.com/' + neg.instagram.replace('@', '') + '/';
       $('#ig-usuario').textContent = '@' + neg.instagram.replace('@', '');
+      $('#btn-ig').hidden = false;
     }
     const wa = String(neg.whatsapp || '').replace(/\D/g, '');
     if (wa) {
       const b = $('#btn-wa');
-      b.href = 'https://wa.me/' + wa + '?text=' + encodeURIComponent('Hola 12oz, quería hacerles una consulta.');
+      b.href = 'https://wa.me/' + wa + '?text=' + encodeURIComponent('Hola, quería hacerles una consulta.');
       b.hidden = false;
     }
     const hs = neg.horarios || [];

@@ -1,5 +1,5 @@
 /* =========================================================
-   CARTA 12oz — estilos
+   CARTA DIGITAL — estilos
    Primero el celular; al final, los cambios para pantallas grandes.
    Colores: cambiá los valores de :root y se actualiza todo.
    ========================================================= */
@@ -632,7 +632,7 @@ main { position: relative; z-index: 3; }
   .cap-intro {
     position: sticky;
     top: 0;
-    height: 100vh;
+    height: 100svh;
     min-height: 0;
     padding-bottom: 10vh;
   }
