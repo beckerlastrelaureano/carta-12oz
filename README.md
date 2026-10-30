@@ -51,8 +51,10 @@ que cambiaste (por ejemplo `css/carta.css?v=1` pasa a `?v=2`). `data/carta.json`
 - `css/carta.css`: estilos (colores en `:root`, arriba de todo).
 - `js/rendimiento.js`: decide la calidad según el teléfono.
 - `js/app.js`: arma la carta desde el JSON, barra de categorías, animaciones, ficha del producto.
+- `js/medios.js`: tarjetas de video (armado, carga y reproducción).
 - `js/escena.js`: la escena 3D (todo dibujado con código, sin modelos externos).
 - `data/carta.json`: la carta.
+- `video/`: clips y pósters de las tarjetas.
 - `img/`: logo, favicon e imagen para compartir (`og.png`).
 
 ## Pendiente antes de publicar
@@ -62,9 +64,30 @@ que cambiaste (por ejemplo `css/carta.css?v=1` pasa a `?v=2`). `data/carta.json`
 - Confirmar la dirección web final: hoy los meta tags, `robots.txt` y `sitemap.xml`
   apuntan a `https://beckerlastrelaureano.github.io/carta-12oz/`.
 
-## Fotos
+## Fotos y videos
 
-Las fotos están en `img/platos/`. Cada una tiene tres archivos: `nombre.jpg` (grande),
+**Videos.** Cada capítulo y la portada tienen una tarjeta de video vertical que entra de costado
+cuando el capítulo llega (en compu alterna izquierda y derecha; en el celular entra desde la derecha
+y queda arriba del título). Encima lleva gradación de color cálida, grano de película, un brillo de
+luz que cruza cada tanto, viñeta y una línea dorada fina. Con el mouse encima, el video se acerca un poco.
+
+- Los clips están en `video/`: `nombre.mp4` (vertical, sin sonido, en loop) y `nombre.jpg` (póster,
+  el primer cuadro). El póster se ve siempre, aunque el video no arranque.
+- Qué video usa cada capítulo se elige en `data/carta.json` con `"video"` (nombre del archivo sin
+  `.mp4`) y `"pieVideo"` (texto chico debajo). El de la portada se cambia en `index.html`
+  (`data-video` y `data-pie` de `.medio-portada`).
+- Si una categoría no tiene `"video"` (hoy: **Salado**), la tarjeta muestra su `"foto"` con un
+  movimiento lento tipo cinemagraph y un reflejo de luz.
+- Se reproduce solo la tarjeta que está a la vista (2 como mucho mientras cambia el capítulo) y el
+  archivo se pide recién cuando la tarjeta está a menos de una pantalla.
+- Con "ahorro de datos" o "reducir movimiento" en el teléfono, se muestra solo el póster.
+- Video nuevo: vertical 720 x 1280, H.264, sin audio, menos de 1 MB, y su póster `.jpg` con el mismo nombre.
+
+Los clips son de **Pexels** (uso libre): portada, café y especiales: Mizuno K; fríos: solod_sha;
+pastelería: Anastasia Shuraeva; combos: Katrin Bolovtsova; bebidas: Timur Weber. El crédito
+aparece al pie del cierre.
+
+**Fotos.** Las fotos están en `img/platos/`. Cada una tiene tres archivos: `nombre.jpg` (grande),
 `nombre-chica.jpg` (celular) y `nombre-prof.jpg` (mapa de profundidad: blanco = cerca, negro = lejos).
 Qué foto usa cada capítulo se elige en `data/carta.json` con `"foto"` y `"pie"`.
 

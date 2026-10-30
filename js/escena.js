@@ -1,17 +1,21 @@
 /* =========================================================
-   ESCENA.JS — la "toma única" de la carta, con fotos reales
-   Cada capítulo tiene la foto de su plato (img/platos/) y un mapa
-   de profundidad (*-prof.jpg: blanco = cerca, negro = lejos).
-   Con eso la foto se mueve como 3D y la cámara viaja con el scroll:
-     portada   -> baja hacia la taza y se acerca
-     capítulos -> empuja hacia adelante y el plato nuevo aparece
-                  de adelante hacia atrás
-   Encima: vapor animado en las bebidas calientes, partículas de luz,
-   viñeta y grano de película.
+   ESCENA.JS — el AMBIENTE de fondo de la carta
+   Detrás de los textos y de las tarjetas de video va la foto del
+   capítulo actual, muy desenfocada y oscura, como una cafetería de
+   noche vista sin foco: manchas de luz cálida (bokeh), un poco de
+   vapor sobre las bebidas calientes y motas de luz que flotan.
+   La cámara viaja suave con el scroll y cambia de foto en cada capítulo.
 
-   - Se dibuja solo mientras se ve (se pausa en el cierre).
-   - Si el teléfono anda lento, se simplifica o se apaga solo.
-   - Con "reducir movimiento": queda quieta y salta de foto en foto.
+   - El desenfoque se hace UNA vez por foto (en un lienzo chico),
+     así el dibujo de cada cuadro es muy liviano.
+   - Si el teléfono anda lento NO se apaga: baja la resolución,
+     saca vapor y motas y, como último paso, dibuja a 30 cuadros.
+     Solo se apaga si no hay WebGL o si las fotos no cargan.
+   - Se pausa cuando la pestaña no se ve y cuando el cierre tapa todo;
+     con una tarjeta de video en pantalla dibuja a la mitad de cuadros.
+   - Con "reducir movimiento": queda quieta y solo cambia de foto.
+   - Si el navegador pierde el WebGL (pasa en iPhone al cambiar de app),
+     se ve el fondo fijo de css/escena.css hasta que vuelve.
    No hace falta editar este archivo.
    ========================================================= */
 
@@ -21,9 +25,13 @@ const carta = window.CARTA || { categorias: [] };
 const canvas = document.getElementById('escena');
 const vivo = perf.quieto ? 0 : 1;
 const FOTO = location.search.includes('foto');   // solo para capturas de prueba: cámara sin suavizado
+const LUZ = 0.42;                                  // cuánta luz tiene la foto de fondo (0 a 1)
 
-const gl = canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' });
-if (!gl) throw new Error('Sin WebGL');
+const apagar = motivo => {
+  console.warn('Escena apagada:', motivo);
+  canvas.classList.remove('lista');
+  dispatchEvent(new Event('escena:apagada'));
+};
 
 /* ---------- Dónde está el plato y de dónde sale el vapor en cada foto ----------
    Coordenadas de la foto: x de izquierda a derecha, y de arriba hacia abajo (0 a 1). */
@@ -38,105 +46,187 @@ const PUNTOS = {
   combos:     { foco: [.45, .66], vapor: [.27, .52], fuerza: .45 }
 };
 
-/* ---------- Shader ---------- */
+/* ---------- WebGL ---------- */
+const gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, stencil: false, powerPreference: 'default' })
+  || canvas.getContext('experimental-webgl');
+
+// Algunos teléfonos (iPhone viejos) no tienen "highp" en el fragment shader
+const PRECISION = gl && (gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT) || {}).precision > 0 ? 'highp' : 'mediump';
+// con mediump el tiempo se reinicia más seguido para no perder precisión
+const PERIODO = PRECISION === 'highp' ? 1000 : 120;
+
 const VERT = `attribute vec2 p; varying vec2 vUv; void main(){ vUv = p * .5 + .5; gl_Position = vec4(p, 0., 1.); }`;
-const FRAG = `precision highp float;
+// detalle = 1: con vapor y motas de luz; 0: versión liviana para teléfonos lentos
+const FRAG = detalle => `precision ${PRECISION} float;
+  #define DETALLE ${detalle}
+  #define CAPAS ${detalle ? 2 : 1}
   varying vec2 vUv;
-  uniform sampler2D uA, uDA, uB, uDB;
+  uniform sampler2D uA, uB;
   uniform vec4 uCamA, uCamB;      // xy = centro de la foto en pantalla, zw = parte visible
-  uniform vec3 uVapA, uVapB;      // xy = punto del vapor, z = fuerza
-  uniform float uMix, uT, uAsp, uVivo;
+  uniform vec3 uVap;              // xy = punto del vapor en pantalla, z = fuerza
+  uniform float uMix, uT, uAsp, uLuz;
   uniform vec2 uMira;
   float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+  vec3 tomar(sampler2D img, vec4 cam, vec2 uv){ return texture2D(img, clamp(cam.xy + (uv - .5) * cam.zw, .002, .998)).rgb; }
+  #if DETALLE
   float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f);
     return mix(mix(h(i), h(i+vec2(1,0)), f.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), f.x), f.y); }
-  float fbm(vec2 p){ float v = 0., a = .5; for (int i = 0; i < 4; i++){ v += a*n(p); p *= 2.03; a *= .5; } return v; }
-
-  // Vapor que sube desde la taza, pegado a la foto (se mueve con la profundidad)
-  float vapor(vec2 q, vec3 v){
-    if (v.z <= 0.) return 0.;
-    vec2 d = q - v.xy;
-    float alto = d.y / .26;
+  float fbm(vec2 p){ float v = 0., a = .5; for (int i = 0; i < 3; i++){ v += a*n(p); p *= 2.03; a *= .5; } return v; }
+  // Vapor suave que sube desde la taza (en coordenadas de pantalla)
+  float vapor(vec2 uv){
+    if (uVap.z <= 0.) return 0.;
+    vec2 d = (uv - uVap.xy) * vec2(uAsp, 1.);
+    float alto = d.y / .34;
     if (alto < 0. || alto > 1.) return 0.;
-    float t = uT * .5;
-    float x = d.x + (fbm(vec2(alto * 2.4 - t * .6, v.x * 9.)) - .5) * .11 * alto;
-    float ancho = mix(.018, .075, alto);
-    float forma = smoothstep(ancho, 0., abs(x));
-    float hum = fbm(vec2(x * 26. + v.x * 7., alto * 4.5 - t * 1.6));
-    return forma * smoothstep(0., .18, alto) * smoothstep(1., .35, alto) * smoothstep(.35, .8, hum) * v.z;
+    float t = uT * .35;
+    float x = d.x + (fbm(vec2(alto * 2. - t * .5, 3.1)) - .5) * .16 * alto;
+    float forma = smoothstep(mix(.03, .12, alto), 0., abs(x));
+    float hum = fbm(vec2(x * 14., alto * 3.5 - t * 1.2));
+    return forma * smoothstep(0., .2, alto) * smoothstep(1., .3, alto) * smoothstep(.3, .75, hum) * uVap.z;
   }
-  vec3 tomar(sampler2D img, sampler2D prof, vec4 cam, vec3 vap, out float d){
-    vec2 base = cam.xy + (vUv - .5) * cam.zw;
-    d = texture2D(prof, base).r;
-    vec2 corr = uMira * .02 * cam.zw;
-    vec2 q = base + corr * (d - .45);
-    d = texture2D(prof, q).r;
-    q = base + corr * (d - .45);
-    q = clamp(q, .001, .999);
-    vec3 c = texture2D(img, q).rgb;
-    c += vec3(1., .96, .9) * vapor(q, vap) * .38 * uVivo;
-    return c;
-  }
+  #endif
   void main(){
-    float dA, dB;
-    vec3 a = tomar(uA, uDA, uCamA, uVapA, dA);
-    vec3 b = tomar(uB, uDB, uCamB, uVapB, dB);
-    // el plato nuevo aparece de adelante hacia atrás
-    float m = smoothstep(0., 1., uMix * 1.7 - (1. - dB) * .7);
-    vec3 col = mix(a, b, m);
-    // partículas de luz que flotan delante de la cámara
-    vec2 s = vec2(vUv.x * uAsp, vUv.y) * 9.;
-    s.y -= uT * .12; s.x += sin(uT * .05 + s.y * .3) * .4;
-    vec2 cel = floor(s), f = fract(s) - .5;
-    float r = h(cel);
-    vec2 pos = vec2(h(cel + 3.1), h(cel + 7.7)) - .5;
-    float mota = smoothstep(.09, 0., length(f - pos * .7)) * step(.82, r) * (.5 + .5 * sin(uT * (1. + r * 2.) + r * 40.));
-    col += vec3(1., .78, .5) * mota * .22 * uVivo;
-    // viñeta y grano de película
+    // la foto se mueve apenas con el mouse / el dedo (lejos)
+    vec2 uv = vUv + uMira * .012;
+    vec3 a = tomar(uA, uCamA, uv), b = tomar(uB, uCamB, uv);
+    // cambio de capítulo: las luces de la foto nueva llegan primero
+    float k = smoothstep(0., 1., uMix * 1.6 - (1. - dot(b, vec3(.3, .59, .11))) * .6);
+    vec3 foto = mix(a, b, k);
+    float lum = dot(foto, vec3(.3, .59, .11));
+    vec3 col = foto * uLuz * vec3(1.06, .97, .86);   // oscura y cálida
+
+    // bokeh: discos de luz donde la foto es clara (se mueven más que la foto: están "cerca")
+    vec2 base = vec2(vUv.x * uAsp, vUv.y);
+    float claro = smoothstep(.16, .7, lum);
+    for (int i = 0; i < CAPAS; i++){
+      float fi = float(i);
+      float esc = 3. + fi * 2.4;
+      vec2 s = base * esc + vec2(uT * .010, uT * .016) * (1. + fi * .6) - uMira * (.3 + fi * .25);
+      vec2 c = floor(s), f = fract(s) - .5;
+      float r = h(c + fi * 13.7);
+      float tam = mix(.16, .3, h(c + 8.1));
+      // el disco entra entero en su celda (si no, se ve cortado con un borde recto)
+      vec2 pos = (vec2(h(c + 1.7), h(c + 4.3)) - .5) * 2. * (.48 - tam);
+      float d = length(f - pos);
+      float disco = smoothstep(tam, tam * .86, d);
+      float aro = smoothstep(tam * .5, tam * .92, d) * disco;
+      float brillo = step(.48, r) * (.75 + .25 * sin(uT * (.25 + r * .5) + r * 40.));
+      col += foto * (disco * .5 + aro * .45) * claro * brillo * (.6 - fi * .18);
+    }
+
+    #if DETALLE
+    // motas de luz que flotan
+    vec2 s = base * 11.;
+    s.y -= uT * .05; s.x += sin(uT * .04 + s.y * .3) * .3;
+    vec2 c = floor(s), f = fract(s) - .5;
+    float r = h(c);
+    vec2 pos = vec2(h(c + 3.1), h(c + 7.7)) - .5;
+    float mota = smoothstep(.06, 0., length(f - pos * .7)) * step(.88, r) * (.5 + .5 * sin(uT * (1. + r * 2.) + r * 40.));
+    col += vec3(1., .8, .55) * mota * .1;
+    col += vec3(1., .95, .88) * vapor(uv) * .09;
+    #endif
+
+    // viñeta y un poco de ruido para que los oscuros no se vean "en escalones"
     vec2 v = vUv - .5;
-    col *= 1. - dot(v * vec2(uAsp, 1.) / max(uAsp, 1.), v) * .9;
-    col += (h(vUv * 911. + fract(uT)) - .5) * .03;
+    col *= 1. - dot(v * vec2(min(uAsp, 1.6), 1.), v) * 1.1;
+    col += (h(gl_FragCoord.xy + fract(uT * 7.)) - .5) / 128.;
     gl_FragColor = vec4(col, 1.);
   }`;
 
-const sh = (tipo, src) => { const s = gl.createShader(tipo); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
-const prog = gl.createProgram();
-gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT));
-gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG));
-gl.linkProgram(prog);
-gl.useProgram(prog);
-gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-const loc = gl.getAttribLocation(prog, 'p');
-gl.enableVertexAttribArray(loc);
-gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-const U = n => gl.getUniformLocation(prog, n);
-const u = { A: U('uA'), DA: U('uDA'), B: U('uB'), DB: U('uDB'), camA: U('uCamA'), camB: U('uCamB'), vapA: U('uVapA'), vapB: U('uVapB'),
-  mix: U('uMix'), t: U('uT'), asp: U('uAsp'), vivo: U('uVivo'), mira: U('uMira') };
-gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-gl.uniform1i(u.A, 0); gl.uniform1i(u.DA, 1); gl.uniform1i(u.B, 2); gl.uniform1i(u.DB, 3);
-gl.uniform1f(u.vivo, vivo);
+const NOMBRES = ['uA', 'uB', 'uCamA', 'uCamB', 'uVap', 'uMix', 'uT', 'uAsp', 'uLuz', 'uMira'];
+let programas = {}, prog = null, perdido = false;
 
-/* ---------- Fotos ---------- */
-const alto = perf.nivel === 'alto';
-const grande = alto && (innerWidth >= 960 || devicePixelRatio > 2.5);
-const cache = {};
-const cargarImg = src => new Promise((ok, mal) => { const i = new Image(); i.decoding = 'async'; i.onload = () => ok(i); i.onerror = mal; i.src = src; });
-function textura(img) {
+function compilar(detalle) {
+  const sh = (tipo, src) => {
+    const s = gl.createShader(tipo); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  };
+  const p = gl.createProgram();
+  gl.attachShader(p, sh(gl.VERTEX_SHADER, VERT));
+  gl.attachShader(p, sh(gl.FRAGMENT_SHADER, FRAG(detalle)));
+  gl.bindAttribLocation(p, 0, 'p');
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {};
+  NOMBRES.forEach(n => (u[n] = gl.getUniformLocation(p, n)));
+  gl.useProgram(p);
+  gl.uniform1i(u.uA, 0); gl.uniform1i(u.uB, 1);
+  return { p, u };
+}
+function usar(detalle) {
+  if (!programas[detalle]) programas[detalle] = compilar(detalle);
+  prog = programas[detalle];
+  gl.useProgram(prog.p);
+}
+// Arma todo lo de WebGL (al empezar y cuando el navegador devuelve el contexto)
+function prepararGL() {
+  programas = {};
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  usar(calidad.detalle);
+  medir(true);
+}
+
+/* ---------- Fotos desenfocadas ----------
+   Se usa la foto chica (540 px): se achica a ~180 px y se desenfoca con
+   3 pasadas de "caja" (queda igual que un desenfoque gaussiano).
+   El resultado se guarda en un lienzo para poder rearmar la textura. */
+const lim = (v, a, b) => Math.min(b, Math.max(a, v));
+function caja(a, b, w, h, r, horizontal) {
+  const n = horizontal ? w : h, filas = horizontal ? h : w;
+  const paso = horizontal ? 4 : w * 4, salto = horizontal ? w * 4 : 4, div = 2 * r + 1;
+  for (let j = 0; j < filas; j++) {
+    const o = j * salto;
+    for (let c = 0; c < 3; c++) {
+      let s = 0;
+      for (let i = -r; i <= r; i++) s += a[o + lim(i, 0, n - 1) * paso + c];
+      for (let i = 0; i < n; i++) {
+        b[o + i * paso + c] = s / div;
+        s += a[o + Math.min(i + r + 1, n - 1) * paso + c] - a[o + Math.max(i - r, 0) * paso + c];
+      }
+    }
+  }
+}
+function desenfocar(img) {
+  const L = 180, asp = img.width / img.height;
+  const w = asp >= 1 ? L : Math.round(L * asp), h = asp >= 1 ? Math.round(L / asp) : L;
+  const lienzo = document.createElement('canvas');
+  lienzo.width = w; lienzo.height = h;
+  const x = lienzo.getContext('2d', { willReadFrequently: true });
+  x.imageSmoothingEnabled = true;
+  x.imageSmoothingQuality = 'high';
+  x.drawImage(img, 0, 0, w, h);
+  const datos = x.getImageData(0, 0, w, h);
+  const a = datos.data, b = new Uint8ClampedArray(a);
+  const r = Math.max(2, Math.round(Math.max(w, h) * .026));
+  for (let k = 0; k < 3; k++) { caja(a, b, w, h, r, true); caja(b, a, w, h, r, false); }
+  x.putImageData(datos, 0, 0);
+  return lienzo;
+}
+// Texturas NPOT: compatibles con WebGL1/iPhone usando CLAMP + LINEAR y sin mipmaps
+function textura(lienzo) {
   const t = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, t);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, lienzo);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   return t;
 }
-const listas = {};
+const cache = {}, listas = {};
+const cargarImg = src => new Promise((ok, mal) => { const i = new Image(); i.decoding = 'async'; i.onload = () => ok(i); i.onerror = mal; i.src = src; });
 function foto(id) {
-  if (!cache[id]) cache[id] = Promise.all([
-    cargarImg(`img/platos/${id}${grande || id === 'barra' ? '' : '-chica'}.jpg`), cargarImg(`img/platos/${id}-prof.jpg`)
-  ]).then(([img, prof]) => (listas[id] = { img: textura(img), prof: textura(prof), asp: img.width / img.height, ...(PUNTOS[id] || PUNTOS.portada) }));
+  if (!cache[id]) cache[id] = cargarImg(`img/platos/${id}-chica.jpg`).then(img => {
+    const lienzo = desenfocar(img);
+    listas[id] = { lienzo, tex: perdido ? null : textura(lienzo), asp: img.width / img.height, ...(PUNTOS[id] || PUNTOS.portada) };
+    sucio = true;
+    return listas[id];
+  }).catch(err => { delete cache[id]; throw err; });   // si falla, se vuelve a intentar más tarde
   return cache[id];
 }
 
@@ -146,21 +236,32 @@ const escritorio = () => ancho >= 960;
 const portadaId = () => (ancho / Math.max(1, altoPx) > 1.1 ? 'barra' : 'portada');
 const estaciones = () => [portadaId(), ...(carta.categorias || []).map(c => c.foto || 'portada')];
 
+/* ---------- Calidad ----------
+   Escalones: si va lento se pasa al siguiente. Nunca se apaga.
+   dpr = resolución interna (el fondo está desenfocado, así que con menos alcanza). */
+const dprBase = Math.min(devicePixelRatio || 1, perf.nivel === 'alto' ? 1 : .85);
+const ESCALONES = [
+  { dpr: dprBase, detalle: 1, cada: 1 },
+  { dpr: Math.min(dprBase, .75), detalle: 1, cada: 1 },
+  { dpr: .6, detalle: 0, cada: 1 },          // sin vapor ni motas
+  { dpr: .5, detalle: 0, cada: 2 }           // último: dibuja un cuadro sí y uno no (~30 por segundo)
+];
+let escalon = 0;
+const calidad = ESCALONES[0];
+
 /* ---------- Tamaño ---------- */
-let dpr = Math.min(devicePixelRatio || 1, alto ? 1.5 : 1.25);
-function medir() {
+let sucio = true;   // hay que volver a dibujar (para el modo quieto)
+function medir(forzar) {
   const w = canvas.clientWidth, h = canvas.clientHeight;
   if (!w || !h) return;
   ancho = w; altoPx = h;
-  const W = Math.round(w * dpr), H = Math.round(h * dpr);
-  if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; gl.viewport(0, 0, W, H); }
+  const W = Math.max(1, Math.round(w * calidad.dpr)), H = Math.max(1, Math.round(h * calidad.dpr));
+  if (forzar || canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; gl.viewport(0, 0, W, H); }
+  sucio = true;
 }
-medir();
-addEventListener('resize', medir);
 
 /* ---------- Cámara ----------
    Para cada foto se calcula qué parte se ve y dónde queda el plato en pantalla. */
-const lim = (v, a, b) => Math.min(b, Math.max(a, v));
 const suavizar = k => k * k * k * (k * (k * 6 - 15) + 10);   // arranca y frena suave
 const mezclar = (a, b, k) => a + (b - a) * k;
 function camara(f, pantallaX, pantallaY, zoom) {
@@ -171,8 +272,8 @@ function camara(f, pantallaX, pantallaY, zoom) {
   const cy = lim(fy - (pantallaY - .5) * ky, ky / 2, 1 - ky / 2);
   return [cx, cy, kx, ky];
 }
-// Dónde va el plato: en la portada a la derecha del titular (compu) o arriba (celular);
-// en los capítulos a la izquierda de la lista (compu) o arriba del título (celular).
+// Dónde queda el plato: en la portada a la derecha del titular (compu) o arriba (celular);
+// en los capítulos a la izquierda (compu) o arriba del título (celular).
 function encuadre(t) {
   const kp = suavizar(lim(t, 0, 1));
   if (escritorio()) {
@@ -182,10 +283,10 @@ function encuadre(t) {
       : { x: mezclar(.68, .3, kc), y: mezclar(.44, .56, kc), z: mezclar(1.12, 1.16, kc) };
   }
   const km = suavizar(lim((t - .3) / .62, 0, 1));
-  // la taza sube y se acerca antes del titular, para que el texto quede debajo
-  const zp = mezclar(1.0, 1.42, km);
-  return { x: .5, y: mezclar(.42, .74, km), z: t < 1 ? zp : mezclar(1.42, 1.18, suavizar(lim(t - 1, 0, 1))) };
+  return { x: .5, y: mezclar(.42, .62, km), z: t < 1 ? mezclar(1.0, 1.2, km) : mezclar(1.2, 1.1, suavizar(lim(t - 1, 0, 1))) };
 }
+// punto de la foto -> posición en pantalla (0 a 1, y hacia arriba)
+const aPantalla = (cam, x, y) => [(x - cam[0]) / cam[2] + .5, (1 - y - cam[1]) / cam[3] + .5];
 
 /* ---------- Mouse, dedo e inclinación ---------- */
 const mira = { x: 0, y: 0, ox: 0, oy: 0, empuje: 0 };
@@ -194,7 +295,7 @@ addEventListener('pointermove', e => {
   if (e.pointerType !== 'mouse') return;
   mira.ox = e.clientX / innerWidth * 2 - 1; mira.oy = e.clientY / innerHeight * 2 - 1; tocado = performance.now();
 }, { passive: true });
-const zonaLibre = e => !e.target.closest('.cap-lista, .barra, .ficha, .cierre, a, button');
+const zonaLibre = e => !e.target.closest('.cap-lista, .barra, .ficha, .cierre, a, button, video');
 addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' && zonaLibre(e)) arr = { x: e.clientX, y: e.clientY }; }, { passive: true });
 addEventListener('pointermove', e => {
   if (!arr) return;
@@ -209,17 +310,42 @@ addEventListener('deviceorientation', e => {
   mira.ox = lim(e.gamma / 25, -1, 1); mira.oy = lim((e.beta - 45) / 30, -1, 1); tocado = performance.now();
 }, { passive: true });
 
+/* ---------- Tarjetas de video ----------
+   Mientras un video se reproduce y ocupa buena parte de la pantalla, el fondo
+   se dibuja a la mitad de cuadros: así el teléfono le deja la fuerza al video. */
+let videoRevisado = 0, videoActivo = false;
+function hayVideo(ahora) {
+  if (ahora - videoRevisado < 400) return videoActivo;
+  videoRevisado = ahora;
+  const area = innerWidth * innerHeight;
+  videoActivo = Array.prototype.some.call(document.getElementsByTagName('video'), v => {
+    if (v.paused || v.ended) return false;
+    const r = v.getBoundingClientRect();
+    const w = Math.min(r.right, innerWidth) - Math.max(r.left, 0), h = Math.min(r.bottom, innerHeight) - Math.max(r.top, 0);
+    return w > 0 && h > 0 && w * h > area * .2;
+  });
+  return videoActivo;
+}
+
 /* ---------- Animación ---------- */
-let tS = 0, primera = true, inicio = performance.now();
-const camA = [0, 0, 1, 1], camB = [0, 0, 1, 1];
+let tS = 0, primera = true, impar = false;
+const inicio = performance.now();
+let camA = [0, 0, 1, 1], camB = [0, 0, 1, 1];
 function cuadro(ahora) {
   const r = (ahora - inicio) / 1000;
   const dt = Math.min(.05, (ahora - (cuadro.ult || ahora)) / 1000); cuadro.ult = ahora;
 
   const objetivo = perf.quieto ? Math.round(estado.t) : estado.t;
+  const antes = tS;
   tS = primera || perf.quieto || FOTO ? objetivo : tS + (objetivo - tS) * Math.min(1, dt * 5);
   primera = false;
-  if (estado.fin >= .999) return;   // el cierre tapa todo
+  if (Math.abs(tS - antes) > 1e-4) sucio = true;
+  if (estado.fin >= .999 || perdido) return;   // el cierre tapa todo
+  // modo quieto: solo se dibuja si algo cambió
+  if (!vivo && !sucio) return;
+  // último escalón de calidad o video en pantalla: un cuadro sí y uno no
+  impar = !impar;
+  if ((calidad.cada === 2 || hayVideo(ahora)) && impar) return;
 
   const est = estaciones();
   const N = est.length - 1;
@@ -230,12 +356,12 @@ function cuadro(ahora) {
     ia = Math.min(Math.floor(s), N - 1); ib = ia + 1;
     k = suavizar(lim(s - ia, 0, 1));
   }
-  const fa = listas[est[ia]], fb = listas[est[ib]] || fa;
+  const fa = listas[est[ia]], fb = (listas[est[ib]] && listas[est[ib]].tex) ? listas[est[ib]] : fa;
   // se piden las fotos de este tramo y las siguientes
-  [ia, ib, Math.min(ib + 1, N)].forEach(j => foto(est[j]));
-  if (!fa) return;
+  [ia, ib, Math.min(ib + 1, N)].forEach(j => foto(est[j]).catch(() => {}));
+  if (!fa || !fa.tex) return;
 
-  // Quieto un rato: el plato "respira" solo
+  // Quieto un rato: el fondo "respira" solo
   if (vivo && ahora - tocado > 2500) { mira.ox = Math.sin(r * .35) * .5; mira.oy = Math.cos(r * .27) * .3; }
   mira.x += (mira.ox - mira.x) * .06;
   mira.y += (mira.oy - mira.y) * .06;
@@ -244,67 +370,113 @@ function cuadro(ahora) {
 
   const e = encuadre(tS);
   const arco = Math.sin(Math.PI * k) * (tS >= 1 ? 1 : 0);
-  const respiro = 1 + Math.sin(r * .23) * .01 * vivo + mira.empuje * .04;
+  const respiro = 1 + Math.sin(r * .23) * .015 * vivo + mira.empuje * .03;
   // el tramo viejo empuja hacia adelante; el nuevo llega desde un poco más cerca
-  camA.splice(0, 4, ...camara(fa, e.x, e.y + arco * .04, e.z * respiro * (1 + k * .5)));
-  camB.splice(0, 4, ...camara(fb, e.x, e.y + arco * .04, e.z * respiro * (1.22 - k * .22)));
+  camA = camara(fa, e.x, e.y + arco * .04, e.z * respiro * (1 + k * .45));
+  camB = camara(fb, e.x, e.y + arco * .04, e.z * respiro * (1.2 - k * .2));
   const mezcla = fb === fa ? 0 : k;
 
-  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fa.img);
-  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, fa.prof);
-  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fb.img);
-  gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, fb.prof);
-  gl.uniform4fv(u.camA, camA); gl.uniform4fv(u.camB, camB);
-  const vap = f => (f.vapor ? [f.vapor[0], 1 - f.vapor[1], f.fuerza] : [0, 0, 0]);
-  gl.uniform3fv(u.vapA, vap(fa)); gl.uniform3fv(u.vapB, vap(fb));
-  gl.uniform1f(u.mix, mezcla);
-  gl.uniform1f(u.t, r);
-  gl.uniform1f(u.asp, ancho / altoPx);
-  gl.uniform2f(u.mira, mira.x * vivo, -mira.y * vivo);
+  // vapor: se desvanece en el cambio de foto
+  let vap = [0, 0, 0];
+  const fv = mezcla > .5 ? fb : fa, cv = mezcla > .5 ? camB : camA;
+  if (fv.vapor && vivo) vap = [...aPantalla(cv, fv.vapor[0], fv.vapor[1]), fv.fuerza * Math.abs(mezcla - .5) * 2];
+
+  const u = prog.u;
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fa.tex);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, fb.tex);
+  gl.uniform4fv(u.uCamA, camA); gl.uniform4fv(u.uCamB, camB);
+  gl.uniform3fv(u.uVap, vap);
+  gl.uniform1f(u.uMix, mezcla);
+  gl.uniform1f(u.uT, r % PERIODO);
+  gl.uniform1f(u.uAsp, ancho / altoPx);
+  gl.uniform1f(u.uLuz, LUZ);
+  gl.uniform2f(u.uMira, mira.x * vivo, -mira.y * vivo);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  controlarFluidez(dt);
+  sucio = false;
 }
 
-/* ---------- Control de fluidez ---------- */
-let cuadros = 0, suma = 0, revisado = false, apagado = false;
-function controlarFluidez(dt) {
-  if (revisado) return;
-  cuadros++;
-  if (cuadros < 40) return;
-  suma += dt;
-  if (cuadros < 160) return;
-  revisado = true;
-  const fps = 120 / suma;
-  if (fps < 20) {
-    apagado = true;
-    detener();
-    perf.bajar(); perf.bajar();
-    canvas.classList.remove('lista');
-    dispatchEvent(new Event('escena:apagada'));
-  } else if (fps < 40) {
-    perf.bajar();
-    dpr = 1; medir();
+/* ---------- Control de fluidez ----------
+   Mide los cuadros por segundo de a tandas. Si va lento, baja un escalón.
+   No apaga nunca la escena por lentitud. */
+const medicion = { cuadros: 0, suma: 0, espera: 90, fps: 0, lentas: 0 };
+function controlarFluidez(ms) {
+  if (escalon >= ESCALONES.length - 1 || !vivo) return;
+  if (ms > 250) return;                         // volvió de otra pestaña: no cuenta
+  if (medicion.espera > 0) { medicion.espera--; return; }
+  medicion.cuadros++; medicion.suma += ms;
+  if (medicion.cuadros < 60) return;
+  const fps = medicion.fps = 1000 * medicion.cuadros / medicion.suma;
+  medicion.cuadros = 0; medicion.suma = 0;
+  // hacen falta dos tandas lentas seguidas (un tirón suelto al cargar no cuenta)
+  if (fps >= 42) { medicion.lentas = 0; return; }
+  if (++medicion.lentas < 2) return;
+  medicion.lentas = 0;
+  escalon++;
+  Object.assign(calidad, ESCALONES[escalon]);
+  if (perf.nivel === 'alto') perf.bajar();      // pasa a "medio", nunca a "bajo"
+  if (!perdido) { usar(calidad.detalle); medir(true); }
+  medicion.espera = 30;
+  console.info(`Escena: ${Math.round(fps)} fps, bajo a calidad ${escalon} (dpr ${calidad.dpr})`);
+}
+
+/* ---------- Pérdida de WebGL (iPhone al cambiar de app, poca memoria) ---------- */
+canvas.addEventListener('webglcontextlost', e => {
+  e.preventDefault();                           // pide que el navegador lo devuelva
+  perdido = true;
+  canvas.classList.remove('lista');             // se ve el fondo fijo de css/escena.css
+  detener();
+}, false);
+canvas.addEventListener('webglcontextrestored', () => {
+  try {
+    perdido = false;
+    prepararGL();
+    Object.values(listas).forEach(f => (f.tex = textura(f.lienzo)));
+    canvas.classList.add('lista');
+    arrancar();
+  } catch (err) { apagar(err); }
+}, false);
+
+/* ---------- Arranque ---------- */
+let andando = false, ultimo = 0;
+function bucle(t) {
+  if (!andando) return;
+  if (ultimo) controlarFluidez(t - ultimo);
+  ultimo = t;
+  cuadro(t);
+  requestAnimationFrame(bucle);
+}
+function arrancar() { if (!andando && !perdido && !document.hidden) { andando = true; ultimo = 0; requestAnimationFrame(bucle); } }
+function detener() { andando = false; }
+document.addEventListener('visibilitychange', () => (document.hidden ? detener() : arrancar()));
+addEventListener('resize', () => medir());
+
+if (!gl) {
+  apagar('sin WebGL');
+} else {
+  try {
+    prepararGL();
+    // Primero la foto de la portada; las demás se bajan de a una cuando el teléfono está libre
+    foto(portadaId()).then(() => {
+      cuadro(performance.now());
+      arrancar();
+      requestAnimationFrame(() => {
+        canvas.classList.add('lista');
+        dispatchEvent(new Event('escena:lista'));
+      });
+      const resto = () => estaciones().forEach((id, j) => setTimeout(() => foto(id), j * 250));
+      // Safari no tiene requestIdleCallback: ahí se espera un poco y listo
+      ('requestIdleCallback' in window) ? requestIdleCallback(resto, { timeout: 2500 }) : setTimeout(resto, 1200);
+    }).catch(err => apagar(err));
+  } catch (err) {
+    apagar(err);
   }
 }
 
-/* ---------- Arranque ---------- */
-let andando = false;
-function bucle(t) { if (!andando) return; cuadro(t); requestAnimationFrame(bucle); }
-function arrancar() { if (!andando && !apagado && !document.hidden) { andando = true; requestAnimationFrame(bucle); } }
-function detener() { andando = false; }
-document.addEventListener('visibilitychange', () => (document.hidden ? detener() : arrancar()));
-
-// Primero la foto de la portada; las demás se bajan de a una cuando el teléfono está libre
-foto(portadaId()).then(() => {
-  cuadro(performance.now());
-  arrancar();
-  requestAnimationFrame(() => {
-    canvas.classList.add('lista');
-    dispatchEvent(new Event('escena:lista'));
-  });
-  const resto = () => estaciones().forEach((id, j) => setTimeout(() => foto(id), j * 250));
-  ('requestIdleCallback' in window) ? requestIdleCallback(resto) : setTimeout(resto, 1200);
-}).catch(() => dispatchEvent(new Event('escena:apagada')));
-
 // Para revisar desde la consola del navegador (no afecta a la carta)
-window.CARTA_ESCENA = { get tS() { return tS; }, listas };
+window.CARTA_ESCENA = {
+  get tS() { return tS; },
+  get escalon() { return escalon; },
+  get fps() { return Math.round(medicion.fps); },
+  get dpr() { return calidad.dpr; },
+  listas
+};

@@ -21,14 +21,15 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 
   <!-- Decide cuánto 3D aguanta el teléfono (antes que todo) -->
-  <script src="js/rendimiento.js?v=2"></script>
+  <script src="js/rendimiento.js?v=3"></script>
 
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap">
-  <link rel="stylesheet" href="css/carta.css?v=4">
+  <link rel="stylesheet" href="css/carta.css?v=6">
+  <link rel="stylesheet" href="css/escena.css?v=1">
   <link rel="preload" href="data/carta.json" as="fetch" crossorigin>
 
   <script type="application/ld+json">
@@ -107,6 +108,10 @@
           <div class="deslizar" aria-hidden="true"><span>Deslizá</span><i></i></div>
         </div>
 
+        <!-- Tarjeta de video de la portada: entra de costado cuando el logo se abre.
+             data-video = archivo de video/ (sin .mp4) · data-pie = texto chico debajo -->
+        <figure class="medio medio-portada" data-video="portada" data-foto="portada" data-pie="Leche texturizada sobre el espresso" data-lado="der"></figure>
+
         <div class="portada-frase">
           <h1 class="titular" data-lineas>Buen café, servido sin apuro.</h1>
           <p class="portada-sub">Café de especialidad, pastelería del día y cocina para quedarse. Deslizá y elegí.</p>
@@ -166,6 +171,8 @@
         </div>
       </div>
       <p class="pie">Precios en pesos argentinos, sujetos a cambios sin previo aviso.</p>
+      <!-- Créditos de los videos (Pexels, uso libre) -->
+      <p class="creditos">Videos: Pexels (Mizuno K, solod_sha, Anastasia Shuraeva, Katrin Bolovtsova, Timur Weber)</p>
     </section>
   </main>
 
@@ -192,6 +199,7 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
-  <script src="js/app.js?v=4"></script>
+  <script src="js/medios.js?v=1"></script>
+  <script src="js/app.js?v=5"></script>
 </body>
 </html>

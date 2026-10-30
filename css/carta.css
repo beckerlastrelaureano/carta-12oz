@@ -213,7 +213,7 @@ ul { padding: 0; list-style: none; }
 .en-cierre .pills { background: rgba(20, 17, 14, .9); border-color: transparent; }
 
 /* ---------- Portada ---------- */
-main { position: relative; z-index: 3; }
+main { position: relative; z-index: 3; overflow-x: clip; }   /* las tarjetas que entran desde afuera no ensanchan la página */
 .portada { height: 320svh; position: relative; }
 .portada-fija {
   position: sticky;
@@ -293,7 +293,7 @@ main { position: relative; z-index: 3; }
 
 /* Palabras que suben desde una máscara (ver app.js) */
 .palabra-m { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 .05em .2em; margin: 0 -.05em -.2em; }
-.palabra-m > span { display: inline-block; will-change: transform; }
+.palabra-m > span { display: inline-block; }
 
 /* ---------- Capítulos ---------- */
 .capitulo { position: relative; }
@@ -305,6 +305,7 @@ main { position: relative; z-index: 3; }
   flex-direction: column;
   justify-content: flex-end;
   touch-action: pan-y;
+  padding-top: calc(82px + var(--seguro-arriba));
 }
 .cap-num {
   display: flex;
@@ -359,11 +360,6 @@ main { position: relative; z-index: 3; }
   border: 1px solid var(--linea);
   border-radius: 26px;
   background: rgba(24, 19, 15, .9);
-}
-[data-nivel="alto"] .cap-lista {
-  background: rgba(24, 19, 15, .72);
-  -webkit-backdrop-filter: blur(22px) saturate(130%);
-          backdrop-filter: blur(22px) saturate(130%);
 }
 [data-nivel="medio"] .cap-lista { background: rgba(24, 19, 15, .84); }
 .cap-lista + .cap-espacio { height: 18svh; }
@@ -455,6 +451,143 @@ main { position: relative; z-index: 3; }
   color: var(--texto3);
 }
 
+/* ---------- Tarjetas de video (las arma js/medios.js) ----------
+   Se ven SIEMPRE, en todos los niveles (alto, medio, bajo) y aunque falle el 3D.
+   Capas: marco (entra de costado) > lienzo (video con gradación) > grano > brillo > viñeta > línea dorada */
+.medio {
+  --alto: min(42svh, 400px);              /* alto de la tarjeta; el ancho sale de la proporción 4:5 */
+  position: relative;
+  z-index: 1;
+  flex: none;
+  align-self: flex-end;
+  width: calc(var(--alto) * .8);
+  margin: 0 0 28px;
+}
+.medio-marco {
+  position: relative;
+  height: var(--alto);
+  aspect-ratio: 4 / 5;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--tostado);
+  box-shadow: 0 34px 70px -34px rgba(0, 0, 0, .8), 0 0 0 1px rgba(243, 236, 224, .07);
+  -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+}
+.medio-lienzo {
+  position: absolute;
+  inset: 0;
+  /* Gradación cálida para que todos los clips se vean de la misma familia (fija, no se anima) */
+  filter: contrast(1.08) saturate(.84) sepia(.14) brightness(.96);
+  transition: scale 1s var(--curva);
+}
+.medio-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* El video aparece encima del póster recién cuando empieza a moverse */
+.medio-video { opacity: 0; transition: opacity .7s ease; }
+.medio.reproduce .medio-video { opacity: 1; }
+.medio.sin-video .medio-video, .medios-quietos .medio-video { display: none; }
+.medio-video::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
+.medio-video::-webkit-media-controls { display: none !important; }
+
+/* Salado (sin video): foto con movimiento lento tipo cinemagraph */
+.medio-cine { animation: kenburns 18s ease-in-out infinite alternate; }
+@keyframes kenburns {
+  from { transform: scale(1.06) translate(-1.5%, 1%); }
+  to { transform: scale(1.2) translate(2%, -2.5%); }
+}
+.medio-reflejo {
+  position: absolute;
+  inset: 0 -100%;
+  background: linear-gradient(100deg, transparent 42%, rgba(255, 236, 210, .2) 49%, rgba(255, 246, 232, .3) 50%, transparent 58%);
+  transform: translate3d(-35%, 0, 0);
+  animation: reflejo 7s var(--curva) infinite 1.5s;
+}
+@keyframes reflejo { 0% { transform: translate3d(-35%, 0, 0); } 45%, 100% { transform: translate3d(35%, 0, 0); } }
+
+/* Grano de película */
+.medio-grano {
+  position: absolute;
+  inset: -50%;
+  opacity: .13;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grano .9s steps(5) infinite;
+}
+/* Brillo de luz (light leak) que cruza en diagonal cada tanto */
+.medio-luz {
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  background: linear-gradient(118deg, transparent 36%, rgba(255, 150, 70, .16) 44%, rgba(255, 214, 160, .34) 49%, rgba(255, 240, 215, .42) 50.5%, rgba(255, 130, 60, .16) 56%, transparent 64%);
+  transform: translate3d(-70%, -8%, 0);
+  animation: luz 9s ease-in-out infinite;
+  animation-delay: var(--luz-retraso, 1.2s);
+}
+@keyframes luz {
+  0% { transform: translate3d(-70%, -8%, 0); }
+  30%, 100% { transform: translate3d(70%, 8%, 0); }
+}
+.medio-izq .medio-luz { --luz-retraso: 3.4s; }
+/* Viñeta interna, una luz cálida en la esquina y sombra abajo */
+.medio-vineta {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 42% at 0% 0%, rgba(255, 140, 60, .16), transparent 70%),
+    radial-gradient(125% 95% at 50% 45%, transparent 52%, rgba(12, 8, 5, .62) 100%),
+    linear-gradient(to top, rgba(12, 8, 5, .4), transparent 30%);
+}
+/* Línea fina dorada (se dibuja al entrar) */
+.medio-borde {
+  position: absolute;
+  inset: 10px;
+  border: 1px solid rgba(201, 139, 78, .7);
+  border-radius: 2px;
+  pointer-events: none;
+}
+/* Pie chico con el nombre del plato */
+.medio-pie {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: .1em;
+  line-height: 1.35;
+  color: var(--texto2);
+}
+.medio-pie-num { flex: none; color: var(--caramelo); font-variant-numeric: tabular-nums; }
+.medio-pie-num::after { content: ""; display: inline-block; width: 18px; height: 1px; margin-left: 10px; vertical-align: middle; background: currentColor; opacity: .6; }
+
+/* Mouse encima (compu): leve zoom y el brillo se acelera */
+@media (hover: hover) and (pointer: fine) {
+  .medio:hover .medio-lienzo { scale: 1.06; }
+  .medio:hover .medio-luz { animation-duration: 3.2s; animation-delay: 0s; }
+}
+
+/* Ahorro de datos o "reducir movimiento": solo el póster, sin grano ni brillo animados */
+.medios-quietos .medio-grano, .medios-quietos .medio-luz, .medios-quietos .medio-cine,
+.reducir .medio-grano, .reducir .medio-luz, .reducir .medio-cine { animation: none; }
+.medios-quietos .medio-luz, .medios-quietos .medio-reflejo, .reducir .medio-reflejo { display: none; }
+
+/* Sin GSAP o con "reducir movimiento": la tarjeta aparece con un fundido */
+.medios-fade .medio-mueve { transition: opacity .9s ease; }
+html.reducir .medio-mueve { transition-duration: .9s !important; }
+.medios-fade .medio:not(.visto) .medio-mueve { opacity: 0; }
+
+/* Portada: en celular va arriba del titular; aparece cuando el logo se abre */
+.medio-portada { --alto: min(38svh, 380px); margin-bottom: 26px; }
+.portada-simple .medio-portada { opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility .6s; }
+.portada-simple.portada-2 .medio-portada { opacity: 1; visibility: visible; }
+
 /* ---------- Cierre ---------- */
 .cierre {
   position: relative;
@@ -518,6 +651,7 @@ main { position: relative; z-index: 3; }
 .boton[hidden] { display: none; }
 .boton-lleno { background: var(--carbon); color: var(--hueso); }
 .boton-lleno:hover { background: var(--caramelo); border-color: var(--caramelo); color: var(--carbon); }
+.creditos { margin-top: 8px; font-size: 11.5px; letter-spacing: .02em; color: rgba(20, 17, 14, .6); }
 .pie {
   margin-top: 64px;
   padding-top: 18px;
@@ -599,6 +733,8 @@ main { position: relative; z-index: 3; }
   .portada-fija { padding-bottom: calc(9svh + var(--seguro-abajo)); }
   .titular { font-size: clamp(2.5rem, 11.4vw, 3.4rem); max-width: 13ch; }
   .portada-sub { margin-top: 12px; font-size: 14.5px; }
+  .medio { --alto: min(36svh, 300px); margin-bottom: 20px; }
+  .medio-portada { --alto: min(32svh, 260px); }
 }
 
 /* ---------- Pantallas grandes ---------- */
@@ -638,6 +774,30 @@ main { position: relative; z-index: 3; }
   }
   .cap-titulo { font-size: clamp(7rem, 11vw, 12rem); }
   .cap-lista { margin: 22vh 0 22vh; padding: 10px 30px 26px; align-self: start; }
+  [data-nivel="alto"] .cap-lista {
+    background: rgba(24, 19, 15, .72);
+    -webkit-backdrop-filter: blur(22px) saturate(130%);
+            backdrop-filter: blur(22px) saturate(130%);
+  }
+  /* Tarjeta de video: ocupa la zona libre arriba del título, alternando lados */
+  .cap-intro { padding-top: 96px; }
+  /* Tarjeta grande en la zona libre entre el título y la lista, alternando lados */
+  .cap-intro .medio:not(.medio-portada) {
+    --alto: min(50svh, 33vw);
+    position: absolute;
+    top: 9svh;
+    margin: 0;
+  }
+  .cap-intro .medio-izq { left: var(--margen); }
+  .cap-intro .medio-der { right: 0; }
+  .cap-titulo, .cap-num, .cap-bajada { position: relative; z-index: 2; }
+  .medio-portada {
+    --alto: min(62svh, 40vw);
+    position: absolute;
+    right: 7vw;
+    top: 50%;
+    margin: calc(var(--alto) * -.5 - 6px) 0 0;
+  }
   .cap-lista + .cap-espacio { display: none; }
   .cap-fondo { font-size: 38vw; right: auto; left: 2vw; top: 6vh; }
 
@@ -662,6 +822,11 @@ main { position: relative; z-index: 3; }
   }
   .ficha.abierta .ficha-panel { transform: translate(-50%, 50%); opacity: 1; }
   .ficha-asa { display: none; }
+}
+/* Compu con poca altura (ej. 1280 x 720) */
+@media (min-width: 960px) and (max-height: 780px) {
+  .cap-intro .medio:not(.medio-portada) { --alto: min(44svh, 28vw); top: 7svh; }
+  .medio-portada { --alto: min(60svh, 40vw); margin-bottom: 0; }
 }
 
 /* "Reducir movimiento" (la clase la pone js/rendimiento.js) */

@@ -1,5 +1,5 @@
 {
-  "_ayuda": "CARTA DE EJEMPLO. Cambiá nombres, precios y textos acá. Los precios van sin $ ni puntos (ej: 3200). Las etiquetas son texto libre (ej: Vegano, Sin TACC). El campo 'foto' elige la foto de cada capítulo (archivos en img/platos: portada, cafe, especiales, frios, pasteleria, salado, combos, barra) y 'pie' es el texto que va debajo de la foto. Si un producto no se vende más, borrá su bloque entero { ... } y la coma que lo separa.",
+  "_ayuda": "CARTA DE EJEMPLO. Cambiá nombres, precios y textos acá. Los precios van sin $ ni puntos (ej: 3200). Las etiquetas son texto libre (ej: Vegano, Sin TACC). El campo 'foto' elige la foto de cada capítulo (archivos en img/platos: portada, cafe, especiales, frios, pasteleria, salado, combos, barra) y 'pie' es el texto que va debajo de la foto. Si un producto no se vende más, borrá su bloque entero { ... } y la coma que lo separa. VIDEOS: el campo 'video' elige el clip de la tarjeta de cada capítulo (archivos en la carpeta video: cafe, especiales, frios, pasteleria, combos, bebidas; cada uno es nombre.mp4 con su póster nombre.jpg) y 'pieVideo' es el texto chico debajo del video. Si una categoría no tiene 'video' (como Salado), la tarjeta muestra su 'foto' con un movimiento lento. Los clips son de Pexels (uso libre).",
 
   "negocio": {
     "nombre": "Café",
@@ -29,6 +29,8 @@
       "escena": "espresso",
       "foto": "cafe",
       "pie": "Doble espresso y vaso de soda",
+      "video": "cafe",
+      "pieVideo": "Espresso recién extraído",
       "productos": [
         { "nombre": "Espresso", "precio": 3200, "desc": "Corto, denso, con crema color avellana. La base de todo lo que hacemos.", "etiquetas": ["Vegano", "Sin TACC"] },
         { "nombre": "Ristretto", "precio": 3200, "desc": "La primera mitad del espresso: más dulce, más intenso, en dos sorbos.", "etiquetas": ["Vegano", "Sin TACC"] },
@@ -47,6 +49,8 @@
       "escena": "especial",
       "foto": "especiales",
       "pie": "Caramel macchiato",
+      "video": "especiales",
+      "pieVideo": "Café con leche sobre hielo",
       "productos": [
         { "nombre": "Latte de pistacho", "precio": 6500, "desc": "Crema de pistacho tostado, espresso y leche. Verde suave, sabor profundo.", "etiquetas": ["Sin TACC", "Nuevo"] },
         { "nombre": "Mocha blanco", "precio": 5900, "desc": "Chocolate blanco fundido, espresso doble y espuma cremosa.", "etiquetas": ["Sin TACC"] },
@@ -63,6 +67,8 @@
       "escena": "frio",
       "foto": "frios",
       "pie": "Iced latte sobre posavasos de corcho",
+      "video": "frios",
+      "pieVideo": "Cold brew con leche fría",
       "productos": [
         { "nombre": "Iced latte", "precio": 5800, "desc": "Espresso sobre hielo y leche fría. Se mira antes de tomarlo.", "etiquetas": ["Sin TACC", "Leche vegetal"] },
         { "nombre": "Cold brew", "precio": 5500, "desc": "Café infusionado en frío durante 18 horas. Suave, dulce, sin amargor.", "etiquetas": ["Vegano", "Sin TACC"] },
@@ -78,6 +84,8 @@
       "escena": "pasteleria",
       "foto": "pasteleria",
       "pie": "Medialunas de manteca y cookie",
+      "video": "pasteleria",
+      "pieVideo": "Croissants y damascos",
       "productos": [
         { "nombre": "Medialuna de manteca", "precio": 1400, "desc": "Hojaldre dorado y almíbar justo. La compañera de siempre.", "etiquetas": [] },
         { "nombre": "Croissant de almendras", "precio": 4200, "desc": "Relleno de crema de almendras y cubierto de láminas tostadas.", "etiquetas": ["De la casa"] },
@@ -108,6 +116,8 @@
       "escena": "combo",
       "foto": "combos",
       "pie": "Desayuno de la casa",
+      "video": "combos",
+      "pieVideo": "Café de moka y croissants",
       "productos": [
         { "nombre": "Desayuno de la casa", "precio": 8900, "desc": "Café a elección, dos medialunas de manteca y jugo de naranja.", "etiquetas": ["De la casa"] },
         { "nombre": "Brunch", "precio": 13500, "desc": "Avocado toast con huevo, café a elección y jugo de naranja.", "etiquetas": ["Vegetariano"] },
@@ -121,6 +131,8 @@
       "escena": "bebidas",
       "foto": "combos",
       "pie": "Jugo exprimido en el desayuno",
+      "video": "bebidas",
+      "pieVideo": "Agua fresca en jarra de vidrio",
       "productos": [
         { "nombre": "Jugo de naranja exprimido", "precio": 4200, "desc": "Naranjas exprimidas en el momento. Nada más.", "etiquetas": ["Vegano", "Sin TACC"] },
         { "nombre": "Limonada con menta y jengibre", "precio": 4500, "desc": "Limón, menta fresca y jengibre, con mucho hielo.", "etiquetas": ["Vegano", "Sin TACC"] },

@@ -5,6 +5,7 @@
    3. Scroll suave (Lenis) y animaciones (GSAP + ScrollTrigger)
    4. Ficha del producto (bottom sheet)
    5. Carga la escena 3D (js/escena.js) si el teléfono la aguanta
+   6. Tarjetas de video (las arma js/medios.js; acá se animan)
 
    Los textos de la carta se editan en data/carta.json,
    no hace falta tocar este archivo.
@@ -77,7 +78,7 @@
     estadoScroll();
 
     if (perf.nivel !== 'bajo') {
-      import('./escena.js?v=4')
+      import('./escena.js?v=5')
         .then(() => avance(.7))
         .catch(err => { console.warn('El 3D no se pudo cargar; queda la carta sin escena.', err); html.dataset.nivel = 'bajo'; sacarCarga(); });
       addEventListener('escena:lista', sacarCarga, { once: true });
@@ -95,6 +96,12 @@
     const cont = $('#capitulos');
     cont.innerHTML = cats.map((c, i) => {
       const n = dosCifras(i + 1);
+      // Tarjeta de video: en compu alterna izquierda / derecha; en celular siempre a la derecha
+      const lado = i % 2 === 0 ? 'izq' : 'der';
+      const medio = `<figure class="medio medio-${lado}" data-lado="${lado}" data-num="${n}"` +
+        (c.video ? ` data-video="${esc(c.video)}"` : '') +
+        (c.foto ? ` data-foto="${esc(c.foto)}"` : '') +
+        ` data-pie="${esc(c.pieVideo || c.pie || '')}"></figure>`;
       const filas = (c.productos || []).map((p, j) => `
         <li class="producto">
           <button class="prod-btn" type="button" data-cat="${i}" data-prod="${j}">
@@ -108,6 +115,7 @@
       <section class="capitulo" id="${esc(c.id)}" data-i="${i}" aria-labelledby="t-${esc(c.id)}">
         <div class="cap-intro">
           <span class="cap-fondo" aria-hidden="true">${n}</span>
+          ${medio}
           <p class="cap-num">${n} / ${total}</p>
           <h2 class="cap-titulo" id="t-${esc(c.id)}">${esc(c.titulo)}</h2>
           ${c.bajada ? `<p class="cap-bajada">${esc(c.bajada)}</p>` : ''}
@@ -119,6 +127,8 @@
         <div class="cap-espacio" aria-hidden="true"></div>
       </section>`;
     }).join('');
+
+    if (window.CARTA_MEDIOS) { CARTA_MEDIOS.armar(cont); CARTA_MEDIOS.observar(cont); }
 
     // Barra de categorías
     $('#pills').innerHTML = cats.map(c =>
@@ -217,6 +227,9 @@
     if (p && barra) {
       const izq = p.offsetLeft - barra.clientWidth / 2 + p.offsetWidth / 2;
       barra.scrollTo({ left: izq, behavior: perf.reducir ? 'auto' : 'smooth' });
+    } else if (i < 0 && barra) {
+      // De vuelta en la portada: la barra vuelve a mostrar las primeras categorías
+      barra.scrollTo({ left: 0, behavior: perf.reducir ? 'auto' : 'smooth' });
     }
   }
 
@@ -278,6 +291,8 @@
 
     if (!hayGsap) return;
     gsap.registerPlugin(ScrollTrigger);
+    // En el celular la barra del navegador cambia el alto: que no recalcule todo por eso
+    ScrollTrigger.config({ ignoreMobileResize: true });
     html.classList.add('gsap-on');
 
     if (window.Lenis) {
@@ -308,7 +323,15 @@
       .to(marco, { opacity: 0, duration: .1 }, .36)
       .to(pal, { yPercent: 0, duration: .22, stagger: .03, ease: 'power3.out' }, .5)
       .to('.portada-sub', { opacity: 1, y: 0, duration: .14 }, .74)
-      .to({}, { duration: .1 });   // un respiro al final antes del primer capítulo
+      .to({}, { duration: .1 })    // un respiro al final antes del primer capítulo
+      .add(entradaTarjeta($('.medio-portada'), true, .3), .38);
+
+    // Portada: la tarjeta sube un poco más lento que el resto (parallax)
+    const mueveP = $('.medio-portada .medio-mueve');
+    if (mueveP) gsap.fromTo(mueveP, { y: 0 }, {
+      y: () => innerHeight * -.08, ease: 'none',
+      scrollTrigger: { trigger: '#inicio', start: 'bottom bottom', end: 'bottom top', scrub: suave, invalidateOnRefresh: true }
+    });
 
     // Títulos de capítulo: las palabras suben desde una máscara
     $$('.capitulo').forEach(cap => {
@@ -322,6 +345,28 @@
         .fromTo(num, { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: .8, ease: 'power3.out' }, 0)
         .fromTo(t1, { yPercent: 118, rotate: 4 }, { yPercent: 0, rotate: 0, duration: 1.2, ease: 'expo.out', stagger: .06 }, .05)
         .fromTo(t2, { yPercent: 118 }, { yPercent: 0, duration: .9, ease: 'expo.out', stagger: .018 }, .3);
+
+      // Tarjeta de video: entra de costado cuando llega el capítulo
+      const fig = $('.medio', cap);
+      if (fig) {
+        const desdeDerecha = innerWidth < 960 || fig.dataset.lado === 'der';
+        gsap.timeline({
+          scrollTrigger: { trigger: $('.cap-intro', cap), start: 'top 72%', toggleActions: 'play none none reverse', invalidateOnRefresh: true }
+        }).add(entradaTarjeta(fig, desdeDerecha, 1.1));
+        // Parallax: la tarjeta se mueve un poco más lento que el texto
+        const mueve = $('.medio-mueve', fig);
+        if (innerWidth < 960) {
+          gsap.fromTo(mueve, { y: -50 }, {
+            y: 0, ease: 'none',
+            scrollTrigger: { trigger: $('.cap-intro', cap), start: 'top bottom', end: 'top top', scrub: suave }
+          });
+        } else {
+          gsap.fromTo(mueve, { y: -36 }, {
+            y: 28, ease: 'none',
+            scrollTrigger: { trigger: cap, start: 'top bottom', end: 'bottom top', scrub: suave }
+          });
+        }
+      }
 
       // El título se aleja con profundidad cuando sube la lista (solo celular)
       if (innerWidth < 960) {
@@ -348,6 +393,35 @@
 
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { ScrollTrigger.refresh(); medir(); estadoScroll(); });
     ScrollTrigger.addEventListener('refresh', () => { medir(); estadoScroll(); });
+  }
+
+  /* Entrada de una tarjeta de video: llega de costado desde fuera de la pantalla,
+     con un leve giro que se endereza y el video que se "acomoda" (escala).
+     En compu además se abre con un barrido (clip-path); en pantallas táctiles
+     se usa un fundido en su lugar (Safari en iPhone anima mejor solo transform y opacity). */
+  function entradaTarjeta(fig, desdeDerecha, dur) {
+    const tl = gsap.timeline();
+    if (!fig) return tl;
+    const marco = $('.medio-marco', fig), lienzo = $('.medio-lienzo', fig);
+    const borde = $('.medio-borde', fig), pie = $('.medio-pie', fig);
+    const fuera = () => {
+      const r = fig.getBoundingClientRect();
+      return desdeDerecha ? innerWidth - r.left + 40 : -(r.right + 40);
+    };
+    const barrido = !perf.tactil;
+    const desde = { x: fuera, rotate: desdeDerecha ? 7 : -7, transformOrigin: desdeDerecha ? '0% 100%' : '100% 100%' };
+    const hasta = { x: 0, rotate: 0, duration: dur, ease: 'expo.out' };
+    if (barrido) {
+      desde.clipPath = desdeDerecha ? 'inset(0% 100% 0% 0%)' : 'inset(0% 0% 0% 100%)';
+      hasta.clipPath = 'inset(0% 0% 0% 0%)';
+    } else {
+      desde.opacity = 0; hasta.opacity = 1;
+    }
+    tl.fromTo(marco, desde, hasta, 0)
+      .fromTo(lienzo, { scale: 1.3 }, { scale: 1, duration: dur * 1.3, ease: 'expo.out' }, 0);
+    if (borde) tl.fromTo(borde, { clipPath: 'inset(0% 100% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: dur * 1.1, ease: 'power2.inOut' }, dur * .3);
+    if (pie) tl.fromTo(pie, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: dur * .7, ease: 'power3.out' }, dur * .4);
+    return tl;
   }
 
   // Al terminar la carga, el logo de la portada aparece con un pequeño "respiro"

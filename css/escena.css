@@ -1,0 +1,38 @@
+/* =========================================================
+   ESCENA.CSS — respaldo del fondo y ajustes de la escena
+   Se enlaza en index.html DESPUÉS de css/carta.css.
+
+   El fondo nunca queda vacío:
+   - En nivel "bajo" (sin WebGL o teléfono muy flojo) se ve siempre
+     una foto fija, desenfocada y oscura.
+   - En "alto" y "medio" esa misma foto está debajo del canvas mientras
+     carga, o si el iPhone pierde el WebGL; cuando la escena está
+     lista, se oculta.
+   Para cambiar la foto del respaldo, cambiá las rutas de abajo.
+   ========================================================= */
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;                       /* mismo plano que .escena; el canvas va encima */
+  pointer-events: none;
+  background: var(--carbon, #14110e) url("../img/platos/portada-chica.jpg") center 40% / cover no-repeat;
+  filter: blur(22px) brightness(.42) saturate(1.1);
+  transform: scale(1.1);            /* esconde el borde claro que deja el blur */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+/* En pantallas anchas se usa la foto de la barra (la misma que la escena) */
+@media (min-aspect-ratio: 11/10) {
+  body::before { background-image: url("../img/platos/barra-chica.jpg"); background-position: center 55%; }
+}
+/* Con la escena dibujando, el respaldo no hace falta */
+body:has(.escena.lista)::before { display: none; }
+[data-nivel="bajo"] body::before { display: block; }
+
+/* El grano animado (capa fija de 4 veces la pantalla) cuesta mucho en celular:
+   ahí queda quieto. */
+@media (pointer: coarse) {
+  .grano { animation: none !important; }
+}
