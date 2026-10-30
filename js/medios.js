@@ -104,7 +104,11 @@
         vid.dataset.oyentes = '1';
         vid.addEventListener('playing', () => fig.classList.add('reproduce'));
         // Si el archivo falla, queda el póster y no se reintenta
-        s.addEventListener('error', () => { fig.classList.add('sin-video'); fig.classList.remove('reproduce'); });
+        // (si el archivo se soltó a propósito por estar lejos, no es un error)
+        s.addEventListener('error', () => {
+          if (!s.getAttribute('src')) return;
+          fig.classList.add('sin-video'); fig.classList.remove('reproduce');
+        });
       }
       vid.poster = vid.dataset.poster;
       s.src = s.dataset.src;
